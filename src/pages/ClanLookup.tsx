@@ -25,7 +25,10 @@ export default function ClanLookup() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/clan/${encodeURIComponent(clanTag)}`);
+      const cleanTag = clanTag.replace(/^#/, '');
+      const response = await fetch(
+        `https://nimsraksgrdmtabainln.supabase.co/functions/v1/coc-api/clan/${encodeURIComponent(cleanTag)}`
+      );
       const data = await response.json();
       
       if (response.ok) {

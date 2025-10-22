@@ -24,7 +24,10 @@ export default function PlayerLookup() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/player/${encodeURIComponent(playerTag)}`);
+      const cleanTag = playerTag.replace(/^#/, '');
+      const response = await fetch(
+        `https://nimsraksgrdmtabainln.supabase.co/functions/v1/coc-api/player/${encodeURIComponent(cleanTag)}`
+      );
       const data = await response.json();
       
       if (response.ok) {
