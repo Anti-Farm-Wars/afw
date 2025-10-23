@@ -11,6 +11,7 @@ export default function ClanLookup() {
   const [clanData, setClanData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [association, setAssociation] = useState<any>(null);
+  const [showJson, setShowJson] = useState(false);
   const { toast } = useToast();
 
   const searchClan = async () => {
@@ -87,6 +88,26 @@ export default function ClanLookup() {
 
           {clanData && (
             <div className="space-y-6 animate-in fade-in duration-500">
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowJson(!showJson)}
+                >
+                  {showJson ? "Hide" : "Show"} JSON
+                </Button>
+              </div>
+
+              {showJson && (
+                <Card className="bg-muted">
+                  <CardContent className="pt-6">
+                    <pre className="text-xs overflow-auto max-h-96">
+                      {JSON.stringify({ clan: clanData, association }, null, 2)}
+                    </pre>
+                  </CardContent>
+                </Card>
+              )}
+
               {association && (
                 <Card className="bg-primary/10 border-primary/30">
                   <CardHeader>

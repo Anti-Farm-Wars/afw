@@ -10,6 +10,7 @@ export default function PlayerLookup() {
   const [playerTag, setPlayerTag] = useState("");
   const [playerData, setPlayerData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showJson, setShowJson] = useState(false);
   const { toast } = useToast();
 
   const searchPlayer = async () => {
@@ -85,6 +86,26 @@ export default function PlayerLookup() {
 
           {playerData && (
             <div className="space-y-6 animate-in fade-in duration-500">
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowJson(!showJson)}
+                >
+                  {showJson ? "Hide" : "Show"} JSON
+                </Button>
+              </div>
+
+              {showJson && (
+                <Card className="bg-muted">
+                  <CardContent className="pt-6">
+                    <pre className="text-xs overflow-auto max-h-96">
+                      {JSON.stringify(playerData, null, 2)}
+                    </pre>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-xl">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3">
