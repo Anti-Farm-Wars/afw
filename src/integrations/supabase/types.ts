@@ -14,9 +14,34 @@ export type Database = {
   }
   public: {
     Tables: {
+      association_types: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       clan_associations: {
         Row: {
           association_type: string
+          association_type_id: string | null
           clan_name: string
           clan_tag: string
           created_at: string | null
@@ -27,6 +52,7 @@ export type Database = {
         }
         Insert: {
           association_type: string
+          association_type_id?: string | null
           clan_name: string
           clan_tag: string
           created_at?: string | null
@@ -37,6 +63,7 @@ export type Database = {
         }
         Update: {
           association_type?: string
+          association_type_id?: string | null
           clan_name?: string
           clan_tag?: string
           created_at?: string | null
@@ -44,6 +71,76 @@ export type Database = {
           id?: string
           updated_at?: string | null
           updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clan_associations_association_type_id_fkey"
+            columns: ["association_type_id"]
+            isOneToOne: false
+            referencedRelation: "association_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_associations: {
+        Row: {
+          association_type_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          player_name: string
+          player_tag: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          association_type_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          player_name: string
+          player_tag: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          association_type_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          player_name?: string
+          player_tag?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_associations_association_type_id_fkey"
+            columns: ["association_type_id"]
+            isOneToOne: false
+            referencedRelation: "association_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          username?: string
         }
         Relationships: []
       }
@@ -86,7 +183,7 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "primary_staff" | "staff"
+      app_role: "primary_admin" | "admin" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -214,7 +311,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["primary_staff", "staff"],
+      app_role: ["primary_admin", "admin", "staff"],
     },
   },
 } as const
