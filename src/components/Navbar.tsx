@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sword, Shield, Users, Image, LogIn } from "lucide-react";
+import { Shield, Users, LogIn } from "lucide-react";
 import logo from "@/assets/blood-alliance-logo.png";
 
 export const Navbar = () => {
@@ -35,16 +35,6 @@ export const Navbar = () => {
               >
                 <Users className="h-4 w-4" />
                 Player Lookup
-              </Button>
-            </Link>
-            
-            <Link to="/gallery">
-              <Button 
-                variant={isActive("/gallery") ? "default" : "ghost"}
-                className="gap-2"
-              >
-                <Image className="h-4 w-4" />
-                Gallery
               </Button>
             </Link>
             
