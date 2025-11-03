@@ -3,7 +3,8 @@ import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Shield, Users, Trophy, Star } from "lucide-react";
+import { Search, Shield, Users, Trophy, Star, ExternalLink, Crown, Swords, Award } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ClanLookup() {
@@ -126,16 +127,37 @@ export default function ClanLookup() {
 
               <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-xl">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <Shield className="h-6 w-6 text-primary" />
-                    {clanData.name}
-                    <span className="text-sm text-muted-foreground font-normal">
-                      {clanData.tag}
-                    </span>
-                  </CardTitle>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      {clanData.badgeUrls?.medium && (
+                        <img 
+                          src={clanData.badgeUrls.medium} 
+                          alt={`${clanData.name} badge`}
+                          className="h-16 w-16 rounded-lg"
+                        />
+                      )}
+                      <div>
+                        <CardTitle className="flex items-center gap-3 mb-2">
+                          {clanData.name}
+                          <span className="text-sm text-muted-foreground font-normal">
+                            {clanData.tag}
+                          </span>
+                        </CardTitle>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.location.href = `clashofclans://action=OpenClanProfile&tag=${clanData.tag.replace('#', '')}`}
+                          className="gap-2"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Open in Game
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="flex items-center gap-3 p-4 bg-background/50 rounded-lg">
                       <Users className="h-5 w-5 text-secondary" />
                       <div>
@@ -159,12 +181,82 @@ export default function ClanLookup() {
                         <p className="text-xl font-bold">{clanData.clanLevel}</p>
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-3 p-4 bg-background/50 rounded-lg">
+                      <Swords className="h-5 w-5 text-secondary" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">War Streak</p>
+                        <p className="text-xl font-bold">{clanData.warWinStreak || 0}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-background/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">Clan Status</p>
+                      <p className="font-semibold capitalize">{clanData.type || 'Unknown'}</p>
+                    </div>
+
+                    <div className="p-4 bg-background/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">War League</p>
+                      <p className="font-semibold">{clanData.warLeague?.name || 'Unranked'}</p>
+                    </div>
+
+                    {clanData.memberList?.find((m: any) => m.role === 'leader') && (
+                      <div className="p-4 bg-background/50 rounded-lg">
+                        <p className="text-sm text-muted-foreground mb-1 flex items-center gap-2">
+                          <Crown className="h-4 w-4" />
+                          Clan Leader
+                        </p>
+                        <p className="font-semibold">
+                          {clanData.memberList.find((m: any) => m.role === 'leader').name}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="p-4 bg-background/50 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1 flex items-center gap-2">
+                        <Award className="h-4 w-4" />
+                        War Stats
+                      </p>
+                      <p className="font-semibold">
+                        {clanData.warWins || 0} Wins • {clanData.isWarLogPublic ? 'Public' : 'Private'} Log
+                      </p>
+                    </div>
                   </div>
 
                   {clanData.description && (
                     <div className="p-4 bg-background/50 rounded-lg">
                       <h3 className="font-semibold mb-2">Description</h3>
                       <p className="text-muted-foreground">{clanData.description}</p>
+                    </div>
+                  )}
+
+                  {clanData.memberList && clanData.memberList.length > 0 && (
+                    <div className="p-4 bg-background/50 rounded-lg">
+                      <h3 className="font-semibold mb-4">Clan Members</h3>
+                      <div className="max-h-96 overflow-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Role</TableHead>
+                              <TableHead>TH Level</TableHead>
+                              <TableHead className="text-right">Trophies</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {clanData.memberList.map((member: any) => (
+                              <TableRow key={member.tag}>
+                                <TableCell className="font-medium">{member.name}</TableCell>
+                                <TableCell className="capitalize">{member.role}</TableCell>
+                                <TableCell>TH {member.townHallLevel}</TableCell>
+                                <TableCell className="text-right">{member.trophies?.toLocaleString() || 0}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
                   )}
                 </CardContent>
