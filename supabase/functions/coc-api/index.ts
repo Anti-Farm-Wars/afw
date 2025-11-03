@@ -36,38 +36,49 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Login to get temporary token
-    console.log('Logging in to CoC API...');
-    const loginResponse = await fetch('https://developer.clashofclans.com/api/login', {
+    // Get the current IP of this edge function
+    console.log('Detecting current IP...');
+    const ipResponse = await fetch('https://api.ipify.org?format=json');
+    const ipData = await ipResponse.json();
+    const currentIp = ipData.ip;
+    console.log('Current IP:', currentIp);
+
+    // Get a fresh API key for the current IP using the key generation service
+    console.log('Generating fresh API key for current IP...');
+    const keyGenResponse = await fetch('https://get-sc-key.vercel.app', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        game: 'clashofclans',
         email: cocEmail,
         password: cocPassword,
+        fixedIp: currentIp,
       }),
     });
 
-    if (!loginResponse.ok) {
-      const errorText = await loginResponse.text();
-      console.error(`CoC login failed: ${loginResponse.status} - ${errorText}`);
+    if (!keyGenResponse.ok) {
+      const errorText = await keyGenResponse.text();
+      console.error(`Key generation failed: ${keyGenResponse.status} - ${errorText}`);
       return new Response(
-        JSON.stringify({ error: 'Failed to authenticate with Clash of Clans API' }),
+        JSON.stringify({ error: 'Failed to generate API key for current IP' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const loginData = await loginResponse.json();
-    const cocToken = loginData.temporaryAPIToken;
+    const keyData = await keyGenResponse.json();
+    const cocToken = keyData.key;
     
     if (!cocToken) {
-      console.error('No token received from login');
+      console.error('No key received from generation service');
       return new Response(
-        JSON.stringify({ error: 'Failed to obtain API token' }),
+        JSON.stringify({ error: 'Failed to obtain API key' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Successfully generated API key for IP:', keyData.ipRange);
 
     // Clean the tag - remove # if present and encode it properly
     const cleanTag = tag.replace(/^#/, '');
