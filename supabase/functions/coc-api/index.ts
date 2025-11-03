@@ -25,11 +25,46 @@ Deno.serve(async (req) => {
       );
     }
 
-    const cocToken = Deno.env.get('COC_API_TOKEN');
-    if (!cocToken) {
-      console.error('COC_API_TOKEN not configured');
+    const cocEmail = Deno.env.get('COC_EMAIL');
+    const cocPassword = Deno.env.get('COC_PASSWORD');
+    
+    if (!cocEmail || !cocPassword) {
+      console.error('COC_EMAIL or COC_PASSWORD not configured');
       return new Response(
-        JSON.stringify({ error: 'API token not configured' }),
+        JSON.stringify({ error: 'API credentials not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Login to get temporary token
+    console.log('Logging in to CoC API...');
+    const loginResponse = await fetch('https://developer.clashofclans.com/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: cocEmail,
+        password: cocPassword,
+      }),
+    });
+
+    if (!loginResponse.ok) {
+      const errorText = await loginResponse.text();
+      console.error(`CoC login failed: ${loginResponse.status} - ${errorText}`);
+      return new Response(
+        JSON.stringify({ error: 'Failed to authenticate with Clash of Clans API' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const loginData = await loginResponse.json();
+    const cocToken = loginData.temporaryAPIToken;
+    
+    if (!cocToken) {
+      console.error('No token received from login');
+      return new Response(
+        JSON.stringify({ error: 'Failed to obtain API token' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
