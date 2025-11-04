@@ -135,7 +135,7 @@ export default function StaffAuth() {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full" variant="hero" disabled={loading}>
+                    <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? "Signing in..." : "Sign In"}
                     </Button>
                   </form>
@@ -169,7 +169,7 @@ export default function StaffAuth() {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full" variant="hero" disabled={loading}>
+                    <Button type="submit" className="w-full" disabled={loading}>
                       {loading ? "Creating account..." : "Sign Up"}
                     </Button>
                   </form>
