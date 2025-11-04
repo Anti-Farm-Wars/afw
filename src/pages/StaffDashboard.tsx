@@ -178,12 +178,23 @@ export default function StaffDashboard() {
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Store current session before signup
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
       const { data: newUser, error: signUpError } = await supabase.auth.signUp({
         email: newStaffEmail,
         password: newStaffPassword,
       });
 
       if (signUpError) throw signUpError;
+
+      // Re-authenticate as admin after signup auto-signs in the new user
+      if (currentSession) {
+        await supabase.auth.setSession({
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token,
+        });
+      }
 
       if (newUser.user) {
         const { error: roleError } = await supabase.from("user_roles").insert({
