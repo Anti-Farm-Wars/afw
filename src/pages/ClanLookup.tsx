@@ -12,6 +12,8 @@ export default function ClanLookup() {
   const [clanData, setClanData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [association, setAssociation] = useState<any>(null);
+  const [currentWar, setCurrentWar] = useState<any>(null);
+  const [warLog, setWarLog] = useState<any>(null);
   const [showJson, setShowJson] = useState(false);
   const { toast } = useToast();
 
@@ -36,6 +38,8 @@ export default function ClanLookup() {
       if (response.ok) {
         setClanData(data.clan);
         setAssociation(data.association);
+        setCurrentWar(data.currentWar);
+        setWarLog(data.warLog);
       } else {
         toast({
           title: "Error",
@@ -261,6 +265,114 @@ export default function ClanLookup() {
                   )}
                 </CardContent>
               </Card>
+
+              {currentWar && currentWar.state !== 'notInWar' && (
+                <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Swords className="h-5 w-5 text-secondary" />
+                      Current War
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-background/50 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground mb-1">War State</p>
+                        <p className="font-bold capitalize">{currentWar.state}</p>
+                      </div>
+                      <div className="p-4 bg-background/50 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Team Size</p>
+                        <p className="font-bold">{currentWar.teamSize}v{currentWar.teamSize}</p>
+                      </div>
+                      <div className="p-4 bg-background/50 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground mb-1">Stars</p>
+                        <p className="font-bold">
+                          {currentWar.clan?.stars || 0} vs {currentWar.opponent?.stars || 0}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-background/50 rounded-lg">
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          {currentWar.clan?.name}
+                        </h4>
+                        <div className="space-y-1 text-sm">
+                          <p>Destruction: {currentWar.clan?.destructionPercentage?.toFixed(2) || 0}%</p>
+                          <p>Attacks Used: {currentWar.clan?.attacks || 0}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="p-4 bg-background/50 rounded-lg">
+                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          {currentWar.opponent?.name || 'Opponent'}
+                        </h4>
+                        <div className="space-y-1 text-sm">
+                          <p>Destruction: {currentWar.opponent?.destructionPercentage?.toFixed(2) || 0}%</p>
+                          <p>Attacks Used: {currentWar.opponent?.attacks || 0}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {warLog && warLog.items && warLog.items.length > 0 && (
+                <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5 text-secondary" />
+                      War Log History
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-96 overflow-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Opponent</TableHead>
+                            <TableHead>Result</TableHead>
+                            <TableHead>Team Size</TableHead>
+                            <TableHead className="text-right">Stars</TableHead>
+                            <TableHead className="text-right">Destruction</TableHead>
+                            <TableHead>Date</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {warLog.items.map((war: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">
+                                {war.opponent?.name || 'Unknown'}
+                              </TableCell>
+                              <TableCell>
+                                <span className={`font-semibold ${
+                                  war.result === 'win' ? 'text-green-500' : 
+                                  war.result === 'lose' ? 'text-red-500' : 
+                                  'text-yellow-500'
+                                }`}>
+                                  {war.result?.toUpperCase() || 'N/A'}
+                                </span>
+                              </TableCell>
+                              <TableCell>{war.teamSize}v{war.teamSize}</TableCell>
+                              <TableCell className="text-right">
+                                {war.clan?.stars || 0} - {war.opponent?.stars || 0}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {war.clan?.destructionPercentage?.toFixed(1) || 0}%
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {war.endTime ? new Date(war.endTime).toLocaleDateString() : 'N/A'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </div>

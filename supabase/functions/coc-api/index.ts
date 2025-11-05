@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
 
     const cocData = await cocResponse.json();
 
-    // If it's a clan lookup, also check for associations
+    // If it's a clan lookup, also check for associations and war data
     if (type === 'clan') {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -138,10 +138,46 @@ Deno.serve(async (req) => {
         .eq('clan_tag', `#${cleanTag}`)
         .maybeSingle();
 
+      // Fetch current war data
+      let currentWar = null;
+      try {
+        const currentWarUrl = `https://api.clashofclans.com/v1/clans/${encodedTag}/currentwar`;
+        const currentWarResponse = await fetch(currentWarUrl, {
+          headers: {
+            'Authorization': `Bearer ${cocToken}`,
+            'Accept': 'application/json',
+          },
+        });
+        if (currentWarResponse.ok) {
+          currentWar = await currentWarResponse.json();
+        }
+      } catch (error) {
+        console.log('Could not fetch current war data:', error);
+      }
+
+      // Fetch war log history
+      let warLog = null;
+      try {
+        const warLogUrl = `https://api.clashofclans.com/v1/clans/${encodedTag}/warlog`;
+        const warLogResponse = await fetch(warLogUrl, {
+          headers: {
+            'Authorization': `Bearer ${cocToken}`,
+            'Accept': 'application/json',
+          },
+        });
+        if (warLogResponse.ok) {
+          warLog = await warLogResponse.json();
+        }
+      } catch (error) {
+        console.log('Could not fetch war log data:', error);
+      }
+
       return new Response(
         JSON.stringify({
           clan: cocData,
           association: association,
+          currentWar: currentWar,
+          warLog: warLog,
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
