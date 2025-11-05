@@ -141,6 +141,7 @@ Deno.serve(async (req) => {
       // Fetch current war data
       let currentWar = null;
       try {
+        console.log('Fetching current war data...');
         const currentWarUrl = `https://api.clashofclans.com/v1/clans/${encodedTag}/currentwar`;
         const currentWarResponse = await fetch(currentWarUrl, {
           headers: {
@@ -148,16 +149,21 @@ Deno.serve(async (req) => {
             'Accept': 'application/json',
           },
         });
+        console.log('Current war response status:', currentWarResponse.status);
         if (currentWarResponse.ok) {
           currentWar = await currentWarResponse.json();
+          console.log('Current war state:', currentWar?.state);
+        } else {
+          console.log('Current war response not ok:', await currentWarResponse.text());
         }
       } catch (error) {
-        console.log('Could not fetch current war data:', error);
+        console.log('Error fetching current war data:', error);
       }
 
       // Fetch war log history
       let warLog = null;
       try {
+        console.log('Fetching war log data...');
         const warLogUrl = `https://api.clashofclans.com/v1/clans/${encodedTag}/warlog`;
         const warLogResponse = await fetch(warLogUrl, {
           headers: {
@@ -165,11 +171,15 @@ Deno.serve(async (req) => {
             'Accept': 'application/json',
           },
         });
+        console.log('War log response status:', warLogResponse.status);
         if (warLogResponse.ok) {
           warLog = await warLogResponse.json();
+          console.log('War log items count:', warLog?.items?.length || 0);
+        } else {
+          console.log('War log response not ok:', await warLogResponse.text());
         }
       } catch (error) {
-        console.log('Could not fetch war log data:', error);
+        console.log('Error fetching war log data:', error);
       }
 
       return new Response(
