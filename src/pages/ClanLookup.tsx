@@ -28,6 +28,11 @@ export default function ClanLookup() {
     }
 
     setLoading(true);
+    setClanData(null);
+    setAssociation(null);
+    setCurrentWar(null);
+    setWarLog(null);
+    
     try {
       const cleanTag = clanTag.replace(/^#/, '');
       const response = await fetch(
@@ -36,8 +41,12 @@ export default function ClanLookup() {
       const data = await response.json();
       
       if (response.ok) {
+        // Show clan data immediately
         setClanData(data.clan);
         setAssociation(data.association);
+        setLoading(false);
+        
+        // Load war data in background
         setCurrentWar(data.currentWar);
         setWarLog(data.warLog);
       } else {
@@ -46,6 +55,7 @@ export default function ClanLookup() {
           description: data.error || "Failed to fetch clan data",
           variant: "destructive",
         });
+        setLoading(false);
       }
     } catch (error) {
       toast({
@@ -53,7 +63,6 @@ export default function ClanLookup() {
         description: "Failed to connect to API",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
