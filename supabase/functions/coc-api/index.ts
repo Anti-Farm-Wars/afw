@@ -14,9 +14,10 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const path = url.pathname.split('/').filter(Boolean);
     
-    // Expected paths: /coc-api/clan/:tag or /coc-api/player/:tag
-    const type = path[path.length - 2]; // 'clan' or 'player'
-    const tag = path[path.length - 1];
+    // Expected paths: /coc-api/clan/:tag, /coc-api/clan/:tag/cwl, or /coc-api/player/:tag
+    const isCWL = path[path.length - 1] === 'cwl';
+    const type = isCWL ? path[path.length - 3] : path[path.length - 2]; // 'clan' or 'player'
+    const tag = isCWL ? path[path.length - 2] : path[path.length - 1];
 
     if (!tag || !type) {
       return new Response(
@@ -125,6 +126,38 @@ Deno.serve(async (req) => {
     }
 
     const cocData = await cocResponse.json();
+
+    // If it's a CWL lookup
+    if (isCWL && type === 'clan') {
+      try {
+        const cwlUrl = `https://api.clashofclans.com/v1/clans/${encodedTag}/currentwar/leaguegroup`;
+        const cwlResponse = await fetch(cwlUrl, {
+          headers: {
+            'Authorization': `Bearer ${cocToken}`,
+            'Accept': 'application/json',
+          },
+        });
+
+        if (cwlResponse.ok) {
+          const cwlData = await cwlResponse.json();
+          return new Response(
+            JSON.stringify(cwlData),
+            { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'Not in CWL or CWL data not available' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching CWL data:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch CWL data' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     // If it's a clan lookup, also check for associations and war data
     if (type === 'clan') {

@@ -41,12 +41,15 @@ export default function ClanLookup() {
       const data = await response.json();
       
       if (response.ok) {
+        console.log('API Response:', data);
         // Show clan data immediately
         setClanData(data.clan);
         setAssociation(data.association);
         setLoading(false);
         
         // Load war data in background
+        console.log('Current War:', data.currentWar);
+        console.log('War Log:', data.warLog);
         setCurrentWar(data.currentWar);
         setWarLog(data.warLog);
       } else {
