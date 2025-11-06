@@ -7,13 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, LogOut, Trash2, UserPlus, Search, Plus } from "lucide-react";
+import { Shield, LogOut, Trash2, UserPlus, Search, Plus, Upload, Tag } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function StaffDashboard() {
   const [user, setUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [associations, setAssociations] = useState<any[]>([]);
+  const [associationTypes, setAssociationTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [clanTag, setClanTag] = useState("");
   const [clanData, setClanData] = useState<any>(null);
@@ -22,6 +26,10 @@ export default function StaffDashboard() {
   const [description, setDescription] = useState("");
   const [newStaffEmail, setNewStaffEmail] = useState("");
   const [newStaffPassword, setNewStaffPassword] = useState("");
+  const [newTypeName, setNewTypeName] = useState("");
+  const [newTypeDesc, setNewTypeDesc] = useState("");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -42,7 +50,17 @@ export default function StaffDashboard() {
       return;
     }
     setUser(session.user);
+    
+    // Check user role
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .single();
+    
+    setUserRole(roleData?.role || null);
     loadAssociations();
+    loadAssociationTypes();
     setLoading(false);
   };
 
@@ -65,6 +83,23 @@ export default function StaffDashboard() {
       });
     } else {
       setAssociations(data || []);
+    }
+  };
+
+  const loadAssociationTypes = async () => {
+    const { data, error } = await supabase
+      .from("association_types")
+      .select("*")
+      .order("name");
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load association types",
+        variant: "destructive",
+      });
+    } else {
+      setAssociationTypes(data || []);
     }
   };
 
@@ -177,6 +212,15 @@ export default function StaffDashboard() {
 
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (userRole !== 'admin' && userRole !== 'primary_admin') {
+      toast({
+        title: "Error",
+        description: "Only admins can create staff accounts",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       // Store current session before signup
       const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -221,6 +265,131 @@ export default function StaffDashboard() {
     }
   };
 
+  const handleAddAssociationType = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userRole !== 'admin' && userRole !== 'primary_admin') {
+      toast({
+        title: "Error",
+        description: "Only admins can add association types",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("association_types").insert({
+        name: newTypeName,
+        description: newTypeDesc || null,
+        created_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Association type added successfully!",
+      });
+      setNewTypeName("");
+      setNewTypeDesc("");
+      loadAssociationTypes();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteAssociationType = async (id: string) => {
+    if (userRole !== 'admin' && userRole !== 'primary_admin') {
+      toast({
+        title: "Error",
+        description: "Only admins can delete association types",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("association_types")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Association type deleted successfully",
+      });
+      loadAssociationTypes();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCsvUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!csvFile) {
+      toast({
+        title: "Error",
+        description: "Please select a CSV file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const text = await csvFile.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      // Expected headers: clan_tag, clan_name, association_type, description
+      const records = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        if (values.length >= 3) {
+          records.push({
+            clan_tag: values[0],
+            clan_name: values[1],
+            association_type: values[2],
+            description: values[3] || null,
+            updated_by: user.id,
+          });
+        }
+      }
+
+      if (records.length === 0) {
+        throw new Error("No valid records found in CSV");
+      }
+
+      const { error } = await supabase.from("clan_associations").insert(records);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${records.length} associations uploaded successfully!`,
+      });
+      setCsvFile(null);
+      loadAssociations();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   }
@@ -247,10 +416,14 @@ export default function StaffDashboard() {
           </div>
 
           <Tabs defaultValue="associations" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="associations">Manage Associations</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="associations">Associations</TabsTrigger>
               <TabsTrigger value="add">Add Association</TabsTrigger>
-              <TabsTrigger value="staff">Create Staff</TabsTrigger>
+              <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
+              <TabsTrigger value="types">Association Types</TabsTrigger>
+              {(userRole === 'admin' || userRole === 'primary_admin') && (
+                <TabsTrigger value="staff">Create Staff</TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="associations">
@@ -330,13 +503,18 @@ export default function StaffDashboard() {
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="type">Association Type *</Label>
-                        <Input
-                          id="type"
-                          placeholder="e.g., Blood Alliance"
-                          value={associationType}
-                          onChange={(e) => setAssociationType(e.target.value)}
-                          className="bg-background/50"
-                        />
+                        <Select value={associationType} onValueChange={setAssociationType}>
+                          <SelectTrigger className="bg-background/50">
+                            <SelectValue placeholder="Select association type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {associationTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.name}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-2">
@@ -360,48 +538,175 @@ export default function StaffDashboard() {
               </div>
             </TabsContent>
 
-            <TabsContent value="staff">
+            <TabsContent value="bulk">
               <Card>
                 <CardHeader>
-                  <CardTitle>Create Staff Account</CardTitle>
-                  <CardDescription>Add new staff members who can manage associations</CardDescription>
+                  <CardTitle>Bulk Upload Associations</CardTitle>
+                  <CardDescription>Upload multiple associations via CSV file</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleCreateStaff} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="staff-email">Email</Label>
-                      <Input
-                        id="staff-email"
-                        type="email"
-                        placeholder="newstaff@example.com"
-                        value={newStaffEmail}
-                        onChange={(e) => setNewStaffEmail(e.target.value)}
-                        required
-                        className="bg-background/50"
-                      />
+                  <div className="space-y-4">
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <p className="text-sm font-medium mb-2">CSV Format:</p>
+                      <code className="text-xs">clan_tag,clan_name,association_type,description</code>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Example: #2PP,Example Clan,Blood Alliance,Main clan
+                      </p>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="staff-password">Password</Label>
-                      <Input
-                        id="staff-password"
-                        type="password"
-                        value={newStaffPassword}
-                        onChange={(e) => setNewStaffPassword(e.target.value)}
-                        required
-                        minLength={6}
-                        className="bg-background/50"
-                      />
-                    </div>
+                    <form onSubmit={handleCsvUpload} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="csv-file">CSV File</Label>
+                        <Input
+                          id="csv-file"
+                          type="file"
+                          accept=".csv"
+                          onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                          className="bg-background/50"
+                        />
+                      </div>
 
-                    <Button type="submit" className="w-full">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Create Staff Account
-                    </Button>
-                  </form>
+                      <Button type="submit" className="w-full" disabled={uploading || !csvFile}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploading ? "Uploading..." : "Upload CSV"}
+                      </Button>
+                    </form>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="types">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Manage Association Types</CardTitle>
+                    <CardDescription>Add and manage available association types</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {(userRole === 'admin' || userRole === 'primary_admin') && (
+                      <form onSubmit={handleAddAssociationType} className="space-y-4 mb-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="type-name">Type Name *</Label>
+                          <Input
+                            id="type-name"
+                            placeholder="e.g., Blood Alliance"
+                            value={newTypeName}
+                            onChange={(e) => setNewTypeName(e.target.value)}
+                            required
+                            className="bg-background/50"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="type-desc">Description (Optional)</Label>
+                          <Textarea
+                            id="type-desc"
+                            placeholder="Description of this association type..."
+                            value={newTypeDesc}
+                            onChange={(e) => setNewTypeDesc(e.target.value)}
+                            className="bg-background/50"
+                          />
+                        </div>
+
+                        <Button type="submit" className="w-full">
+                          <Tag className="h-4 w-4 mr-2" />
+                          Add Association Type
+                        </Button>
+                      </form>
+                    )}
+
+                    <div className="border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Description</TableHead>
+                            {(userRole === 'admin' || userRole === 'primary_admin') && (
+                              <TableHead className="w-[100px]">Actions</TableHead>
+                            )}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {associationTypes.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                No association types found
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            associationTypes.map((type) => (
+                              <TableRow key={type.id}>
+                                <TableCell className="font-medium">{type.name}</TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {type.description || "-"}
+                                </TableCell>
+                                {(userRole === 'admin' || userRole === 'primary_admin') && (
+                                  <TableCell>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => handleDeleteAssociationType(type.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {(userRole === 'admin' || userRole === 'primary_admin') && (
+              <TabsContent value="staff">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Create Staff Account</CardTitle>
+                    <CardDescription>Add new staff members who can manage associations</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleCreateStaff} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="staff-email">Email</Label>
+                        <Input
+                          id="staff-email"
+                          type="email"
+                          placeholder="newstaff@example.com"
+                          value={newStaffEmail}
+                          onChange={(e) => setNewStaffEmail(e.target.value)}
+                          required
+                          className="bg-background/50"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="staff-password">Password</Label>
+                        <Input
+                          id="staff-password"
+                          type="password"
+                          value={newStaffPassword}
+                          onChange={(e) => setNewStaffPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          className="bg-background/50"
+                        />
+                      </div>
+
+                      <Button type="submit" className="w-full">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Create Staff Account
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </main>
