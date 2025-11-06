@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, LogOut, Trash2, UserPlus, Search, Plus, Upload, Tag } from "lucide-react";
+import { Shield, LogOut, Trash2, UserPlus, Search, Plus, Upload, Tag, User } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +18,7 @@ export default function StaffDashboard() {
   const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [associations, setAssociations] = useState<any[]>([]);
+  const [playerAssociations, setPlayerAssociations] = useState<any[]>([]);
   const [associationTypes, setAssociationTypes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [clanTag, setClanTag] = useState("");
@@ -28,8 +30,14 @@ export default function StaffDashboard() {
   const [newStaffPassword, setNewStaffPassword] = useState("");
   const [newTypeName, setNewTypeName] = useState("");
   const [newTypeDesc, setNewTypeDesc] = useState("");
+  const [newTypeColor, setNewTypeColor] = useState("#3b82f6");
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [playerTag, setPlayerTag] = useState("");
+  const [playerData, setPlayerData] = useState<any>(null);
+  const [verifyingPlayer, setVerifyingPlayer] = useState(false);
+  const [playerAssociationType, setPlayerAssociationType] = useState("");
+  const [playerDescription, setPlayerDescription] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -60,6 +68,7 @@ export default function StaffDashboard() {
     
     setUserRole(roleData?.role || null);
     loadAssociations();
+    loadPlayerAssociations();
     loadAssociationTypes();
     setLoading(false);
   };
@@ -100,6 +109,23 @@ export default function StaffDashboard() {
       });
     } else {
       setAssociationTypes(data || []);
+    }
+  };
+
+  const loadPlayerAssociations = async () => {
+    const { data, error } = await supabase
+      .from("player_associations")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load player associations",
+        variant: "destructive",
+      });
+    } else {
+      setPlayerAssociations(data || []);
     }
   };
 
@@ -151,17 +177,19 @@ export default function StaffDashboard() {
     if (!clanData || !associationType.trim()) {
       toast({
         title: "Error",
-        description: "Please verify clan and enter association type",
+        description: "Please verify clan and select association type",
         variant: "destructive",
       });
       return;
     }
 
     try {
+      const selectedType = associationTypes.find(t => t.name === associationType);
       const { error } = await supabase.from("clan_associations").insert({
         clan_tag: clanData.tag,
         clan_name: clanData.name,
         association_type: associationType,
+        color: selectedType?.color || "#3b82f6",
         description: description || null,
         updated_by: user.id,
       });
@@ -170,7 +198,7 @@ export default function StaffDashboard() {
 
       toast({
         title: "Success",
-        description: "Association added successfully!",
+        description: "Clan association added successfully!",
       });
 
       setClanTag("");
@@ -280,6 +308,7 @@ export default function StaffDashboard() {
       const { error } = await supabase.from("association_types").insert({
         name: newTypeName,
         description: newTypeDesc || null,
+        color: newTypeColor,
         created_by: user.id,
       });
 
@@ -291,6 +320,7 @@ export default function StaffDashboard() {
       });
       setNewTypeName("");
       setNewTypeDesc("");
+      setNewTypeColor("#3b82f6");
       loadAssociationTypes();
     } catch (error: any) {
       toast({
@@ -390,6 +420,115 @@ export default function StaffDashboard() {
     }
   };
 
+  const verifyPlayer = async () => {
+    if (!playerTag.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a player tag",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setVerifyingPlayer(true);
+    try {
+      const cleanTag = playerTag.replace(/^#/, '');
+      const response = await fetch(
+        `https://nimsraksgrdmtabainln.supabase.co/functions/v1/coc-api/player/${encodeURIComponent(cleanTag)}`
+      );
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPlayerData(data.player);
+        toast({
+          title: "Success",
+          description: "Player verified successfully!",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Player not found on CoC API",
+          variant: "destructive",
+        });
+        setPlayerData(null);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to verify player",
+        variant: "destructive",
+      });
+      setPlayerData(null);
+    } finally {
+      setVerifyingPlayer(false);
+    }
+  };
+
+  const handleAddPlayerAssociation = async () => {
+    if (!playerData || !playerAssociationType.trim()) {
+      toast({
+        title: "Error",
+        description: "Please verify player and select association type",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const selectedType = associationTypes.find(t => t.name === playerAssociationType);
+      const { error } = await supabase.from("player_associations").insert({
+        player_tag: playerData.tag,
+        player_name: playerData.name,
+        association_type: playerAssociationType,
+        color: selectedType?.color || "#3b82f6",
+        description: playerDescription || null,
+        updated_by: user.id,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player association added successfully!",
+      });
+
+      setPlayerTag("");
+      setPlayerData(null);
+      setPlayerAssociationType("");
+      setPlayerDescription("");
+      loadPlayerAssociations();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeletePlayerAssociation = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("player_associations")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Player association deleted successfully",
+      });
+      loadPlayerAssociations();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   }
@@ -415,37 +554,44 @@ export default function StaffDashboard() {
             </Button>
           </div>
 
-          <Tabs defaultValue="associations" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="associations">Associations</TabsTrigger>
-              <TabsTrigger value="add">Add Association</TabsTrigger>
-              <TabsTrigger value="bulk">Bulk Upload</TabsTrigger>
-              <TabsTrigger value="types">Association Types</TabsTrigger>
+          <Tabs defaultValue="clan-associations" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="clan-associations">Clan Associations</TabsTrigger>
+              <TabsTrigger value="player-associations">Player Associations</TabsTrigger>
+              <TabsTrigger value="add-clan">Add Clan</TabsTrigger>
+              <TabsTrigger value="add-player">Add Player</TabsTrigger>
+              <TabsTrigger value="types">Types</TabsTrigger>
               {(userRole === 'admin' || userRole === 'primary_admin') && (
-                <TabsTrigger value="staff">Create Staff</TabsTrigger>
+                <TabsTrigger value="staff">Staff</TabsTrigger>
               )}
             </TabsList>
 
-            <TabsContent value="associations">
+            <TabsContent value="clan-associations">
               <Card>
                 <CardHeader>
-                  <CardTitle>Current Associations</CardTitle>
+                  <CardTitle>Clan Associations</CardTitle>
                   <CardDescription>View and manage all clan associations</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {associations.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">No associations found</p>
+                    <p className="text-muted-foreground text-center py-8">No clan associations found</p>
                   ) : (
                     <div className="space-y-4">
                       {associations.map((assoc) => (
                         <div key={assoc.id} className="flex items-center justify-between p-4 border rounded-lg bg-card/50">
-                          <div>
-                            <p className="font-semibold">{assoc.clan_name}</p>
-                            <p className="text-sm text-muted-foreground">{assoc.clan_tag}</p>
-                            <p className="text-sm text-primary mt-1">{assoc.association_type}</p>
-                            {assoc.description && (
-                              <p className="text-sm text-muted-foreground mt-1">{assoc.description}</p>
-                            )}
+                          <div className="flex items-center gap-4">
+                            <div 
+                              className="w-4 h-4 rounded-full flex-shrink-0" 
+                              style={{ backgroundColor: assoc.color || '#3b82f6' }}
+                            />
+                            <div>
+                              <p className="font-semibold">{assoc.clan_name}</p>
+                              <p className="text-sm text-muted-foreground">{assoc.clan_tag}</p>
+                              <p className="text-sm text-primary mt-1">{assoc.association_type}</p>
+                              {assoc.description && (
+                                <p className="text-sm text-muted-foreground mt-1">{assoc.description}</p>
+                              )}
+                            </div>
                           </div>
                           <Button variant="destructive" size="sm" onClick={() => handleDelete(assoc.id)}>
                             <Trash2 className="h-4 w-4" />
@@ -458,7 +604,45 @@ export default function StaffDashboard() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="add">
+            <TabsContent value="player-associations">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Player Associations</CardTitle>
+                  <CardDescription>View and manage all player associations</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {playerAssociations.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">No player associations found</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {playerAssociations.map((assoc) => (
+                        <div key={assoc.id} className="flex items-center justify-between p-4 border rounded-lg bg-card/50">
+                          <div className="flex items-center gap-4">
+                            <div 
+                              className="w-4 h-4 rounded-full flex-shrink-0" 
+                              style={{ backgroundColor: assoc.color || '#3b82f6' }}
+                            />
+                            <div>
+                              <p className="font-semibold">{assoc.player_name}</p>
+                              <p className="text-sm text-muted-foreground">{assoc.player_tag}</p>
+                              <p className="text-sm text-primary mt-1">{assoc.association_type}</p>
+                              {assoc.description && (
+                                <p className="text-sm text-muted-foreground mt-1">{assoc.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <Button variant="destructive" size="sm" onClick={() => handleDeletePlayerAssociation(assoc.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="add-clan">
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
@@ -507,10 +691,16 @@ export default function StaffDashboard() {
                           <SelectTrigger className="bg-background/50">
                             <SelectValue placeholder="Select association type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-popover z-50">
                             {associationTypes.map((type) => (
                               <SelectItem key={type.id} value={type.name}>
-                                {type.name}
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full" 
+                                    style={{ backgroundColor: type.color || '#3b82f6' }}
+                                  />
+                                  {type.name}
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -531,6 +721,90 @@ export default function StaffDashboard() {
                       <Button onClick={handleAddAssociation} className="w-full">
                         <Plus className="h-4 w-4 mr-2" />
                         Add Association
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="add-player">
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Step 1: Verify Player</CardTitle>
+                    <CardDescription>Player must exist on Clash of Clans API</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-4">
+                      <Input
+                        placeholder="Enter player tag (e.g., #2PP)"
+                        value={playerTag}
+                        onChange={(e) => setPlayerTag(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && verifyPlayer()}
+                        className="flex-1 bg-background/50"
+                      />
+                      <Button onClick={verifyPlayer} disabled={verifyingPlayer}>
+                        <Search className="h-4 w-4 mr-2" />
+                        {verifyingPlayer ? "Verifying..." : "Verify"}
+                      </Button>
+                    </div>
+
+                    {playerData && (
+                      <div className="flex items-center gap-4 p-4 bg-primary/10 border border-primary/30 rounded-lg">
+                        <User className="h-8 w-8 text-primary" />
+                        <div>
+                          <p className="font-semibold">{playerData.name}</p>
+                          <p className="text-sm text-muted-foreground">{playerData.tag}</p>
+                        </div>
+                        <Shield className="h-5 w-5 text-primary ml-auto" />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {playerData && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Step 2: Add Player Association</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="player-type">Association Type *</Label>
+                        <Select value={playerAssociationType} onValueChange={setPlayerAssociationType}>
+                          <SelectTrigger className="bg-background/50">
+                            <SelectValue placeholder="Select association type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {associationTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.name}>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full" 
+                                    style={{ backgroundColor: type.color || '#3b82f6' }}
+                                  />
+                                  {type.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="player-desc">Description (Optional)</Label>
+                        <Textarea
+                          id="player-desc"
+                          placeholder="Additional details..."
+                          value={playerDescription}
+                          onChange={(e) => setPlayerDescription(e.target.value)}
+                          className="bg-background/50"
+                        />
+                      </div>
+
+                      <Button onClick={handleAddPlayerAssociation} className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Player Association
                       </Button>
                     </CardContent>
                   </Card>
@@ -581,7 +855,7 @@ export default function StaffDashboard() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Manage Association Types</CardTitle>
-                    <CardDescription>Add and manage available association types</CardDescription>
+                    <CardDescription>Add and manage available association types with colors</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {(userRole === 'admin' || userRole === 'primary_admin') && (
@@ -596,6 +870,26 @@ export default function StaffDashboard() {
                             required
                             className="bg-background/50"
                           />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="type-color">Color *</Label>
+                          <div className="flex gap-4 items-center">
+                            <Input
+                              id="type-color"
+                              type="color"
+                              value={newTypeColor}
+                              onChange={(e) => setNewTypeColor(e.target.value)}
+                              className="w-20 h-10"
+                            />
+                            <Input
+                              type="text"
+                              value={newTypeColor}
+                              onChange={(e) => setNewTypeColor(e.target.value)}
+                              placeholder="#3b82f6"
+                              className="flex-1 bg-background/50"
+                            />
+                          </div>
                         </div>
 
                         <div className="space-y-2">
@@ -620,6 +914,7 @@ export default function StaffDashboard() {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="w-[50px]">Color</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Description</TableHead>
                             {(userRole === 'admin' || userRole === 'primary_admin') && (
@@ -630,13 +925,19 @@ export default function StaffDashboard() {
                         <TableBody>
                           {associationTypes.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={3} className="text-center text-muted-foreground">
+                              <TableCell colSpan={4} className="text-center text-muted-foreground">
                                 No association types found
                               </TableCell>
                             </TableRow>
                           ) : (
                             associationTypes.map((type) => (
                               <TableRow key={type.id}>
+                                <TableCell>
+                                  <div 
+                                    className="w-8 h-8 rounded border border-border" 
+                                    style={{ backgroundColor: type.color || '#3b82f6' }}
+                                  />
+                                </TableCell>
                                 <TableCell className="font-medium">{type.name}</TableCell>
                                 <TableCell className="text-muted-foreground">
                                   {type.description || "-"}

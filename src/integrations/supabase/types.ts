@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       association_types: {
         Row: {
+          color: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -23,6 +24,7 @@ export type Database = {
           name: string
         }
         Insert: {
+          color?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -30,6 +32,7 @@ export type Database = {
           name: string
         }
         Update: {
+          color?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -44,6 +47,7 @@ export type Database = {
           association_type_id: string | null
           clan_name: string
           clan_tag: string
+          color: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -55,6 +59,7 @@ export type Database = {
           association_type_id?: string | null
           clan_name: string
           clan_tag: string
+          color?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -66,6 +71,7 @@ export type Database = {
           association_type_id?: string | null
           clan_name?: string
           clan_tag?: string
+          color?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -84,7 +90,9 @@ export type Database = {
       }
       player_associations: {
         Row: {
+          association_type: string
           association_type_id: string | null
+          color: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -94,7 +102,9 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          association_type?: string
           association_type_id?: string | null
+          color?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -104,7 +114,9 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          association_type?: string
           association_type_id?: string | null
+          color?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
