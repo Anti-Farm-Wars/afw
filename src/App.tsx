@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import Index from "./pages/Index";
 import ClanLookup from "./pages/ClanLookup";
 import ClanCWL from "./pages/ClanCWL";
@@ -14,26 +16,31 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/clan-lookup" element={<ClanLookup />} />
-          <Route path="/clan-cwl" element={<ClanCWL />} />
-          <Route path="/player-lookup" element={<PlayerLookup />} />
-          <Route path="/manage-associations" element={<ManageAssociations />} />
-          <Route path="/staff" element={<StaffAuth />} />
-          <Route path="/staff/dashboard" element={<StaffDashboard />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [showLoading, setShowLoading] = useState(true);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        {showLoading && <LoadingScreen onComplete={() => setShowLoading(false)} />}
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/clan-lookup" element={<ClanLookup />} />
+            <Route path="/clan-cwl" element={<ClanCWL />} />
+            <Route path="/player-lookup" element={<PlayerLookup />} />
+            <Route path="/manage-associations" element={<ManageAssociations />} />
+            <Route path="/staff" element={<StaffAuth />} />
+            <Route path="/staff/dashboard" element={<StaffDashboard />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

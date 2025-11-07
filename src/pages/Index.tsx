@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
 import { Shield, Users, Image, Swords, Star, Trophy } from "lucide-react";
-import logo from "@/assets/blood-alliance-logo.png";
+import logo from "@/assets/afw-logo.png";
 
 export default function Index() {
   return (
@@ -21,13 +21,13 @@ export default function Index() {
           <div className="max-w-4xl mx-auto text-center">
             <img 
               src={logo} 
-              alt="Blood Alliance" 
+              alt="AFW" 
               className="h-32 w-32 mx-auto mb-8 animate-pulse"
               style={{ filter: 'drop-shadow(0 0 30px rgba(220, 38, 38, 0.5))' }}
             />
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-4 duration-1000">
-              Blood Alliance
+              AFW
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 animate-in fade-in slide-in-from-bottom-5 duration-1000 delay-150">

@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Shield, Users, LogIn, Trophy } from "lucide-react";
-import logo from "@/assets/blood-alliance-logo.png";
+import logo from "@/assets/afw-logo.png";
 
 export const Navbar = () => {
   const location = useLocation();
@@ -13,8 +13,8 @@ export const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-3 group">
-            <img src={logo} alt="Blood Alliance" className="h-12 w-12 transition-transform group-hover:scale-110" />
-            <span className="font-bold text-xl text-foreground">Blood Alliance</span>
+            <img src={logo} alt="AFW" className="h-12 w-12 transition-transform group-hover:scale-110" />
+            <span className="font-bold text-xl text-foreground">AFW</span>
           </Link>
           
           <div className="hidden md:flex items-center gap-6">
