@@ -3,7 +3,7 @@ import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Shield, Users, Trophy, Star, ExternalLink, Crown, Swords, Award } from "lucide-react";
+import { Search, Shield, Users, Trophy, Star, ExternalLink, Crown, Swords, Award, BarChart3, Target } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
@@ -278,6 +278,79 @@ export default function ClanLookup() {
                 </CardContent>
               </Card>
 
+              {clanData.memberList && clanData.memberList.length > 0 && (
+                <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-xl">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5 text-secondary" />
+                      Clan Composition
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(() => {
+                      const thDistribution: Record<number, number> = {};
+                      clanData.memberList.forEach((member: any) => {
+                        const th = member.townHallLevel;
+                        thDistribution[th] = (thDistribution[th] || 0) + 1;
+                      });
+                      
+                      const sortedTHs = Object.keys(thDistribution)
+                        .map(Number)
+                        .sort((a, b) => b - a);
+                      
+                      const avgTH = (clanData.memberList.reduce((sum: number, m: any) => sum + m.townHallLevel, 0) / clanData.memberList.length).toFixed(1);
+                      
+                      return (
+                        <>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="p-4 bg-background/50 rounded-lg text-center">
+                              <p className="text-sm text-muted-foreground mb-1">Total Members</p>
+                              <p className="text-2xl font-bold">{clanData.memberList.length}</p>
+                            </div>
+                            <div className="p-4 bg-background/50 rounded-lg text-center">
+                              <p className="text-sm text-muted-foreground mb-1">Average TH</p>
+                              <p className="text-2xl font-bold">{avgTH}</p>
+                            </div>
+                            <div className="p-4 bg-background/50 rounded-lg text-center">
+                              <p className="text-sm text-muted-foreground mb-1">Highest TH</p>
+                              <p className="text-2xl font-bold">TH{sortedTHs[0]}</p>
+                            </div>
+                            <div className="p-4 bg-background/50 rounded-lg text-center">
+                              <p className="text-sm text-muted-foreground mb-1">Lowest TH</p>
+                              <p className="text-2xl font-bold">TH{sortedTHs[sortedTHs.length - 1]}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="p-4 bg-background/50 rounded-lg">
+                            <h4 className="font-semibold mb-4">Town Hall Distribution</h4>
+                            <div className="space-y-3">
+                              {sortedTHs.map(th => {
+                                const count = thDistribution[th];
+                                const percentage = (count / clanData.memberList.length) * 100;
+                                return (
+                                  <div key={th} className="space-y-1">
+                                    <div className="flex justify-between text-sm">
+                                      <span className="font-medium">TH{th}</span>
+                                      <span className="text-muted-foreground">{count} ({percentage.toFixed(1)}%)</span>
+                                    </div>
+                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                      <div 
+                                        className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
+                                        style={{ width: `${percentage}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+
               {currentWar && currentWar.state !== 'notInWar' && (
                 <Card className="bg-gradient-to-br from-card to-card/50 border-border/50 shadow-xl">
                   <CardHeader>
@@ -306,27 +379,90 @@ export default function ClanLookup() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="p-4 bg-background/50 rounded-lg">
-                        <h4 className="font-semibold mb-2 flex items-center gap-2">
-                          <Shield className="h-4 w-4" />
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-primary" />
                           {currentWar.clan?.name}
                         </h4>
-                        <div className="space-y-1 text-sm">
-                          <p>Destruction: {currentWar.clan?.destructionPercentage?.toFixed(2) || 0}%</p>
-                          <p>Attacks Used: {currentWar.clan?.attacks || 0}</p>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Stars</span>
+                            <span className="font-semibold flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                              {currentWar.clan?.stars || 0}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Destruction</span>
+                            <span className="font-semibold">{currentWar.clan?.destructionPercentage?.toFixed(2) || 0}%</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Attacks</span>
+                            <span className="font-semibold">{currentWar.clan?.attacks || 0}/{(currentWar.teamSize || 0) * 2}</span>
+                          </div>
                         </div>
                       </div>
                       
                       <div className="p-4 bg-background/50 rounded-lg">
-                        <h4 className="font-semibold mb-2 flex items-center gap-2">
-                          <Shield className="h-4 w-4" />
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          <Target className="h-4 w-4 text-destructive" />
                           {currentWar.opponent?.name || 'Opponent'}
                         </h4>
-                        <div className="space-y-1 text-sm">
-                          <p>Destruction: {currentWar.opponent?.destructionPercentage?.toFixed(2) || 0}%</p>
-                          <p>Attacks Used: {currentWar.opponent?.attacks || 0}</p>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Stars</span>
+                            <span className="font-semibold flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                              {currentWar.opponent?.stars || 0}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Destruction</span>
+                            <span className="font-semibold">{currentWar.opponent?.destructionPercentage?.toFixed(2) || 0}%</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Attacks</span>
+                            <span className="font-semibold">{currentWar.opponent?.attacks || 0}/{(currentWar.teamSize || 0) * 2}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
+
+                    {currentWar.clan?.members && (
+                      <div className="p-4 bg-background/50 rounded-lg">
+                        <h4 className="font-semibold mb-4">War Roster Performance</h4>
+                        <div className="max-h-80 overflow-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Map Position</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>TH</TableHead>
+                                <TableHead className="text-center">Attacks</TableHead>
+                                <TableHead className="text-right">Stars</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {currentWar.clan.members
+                                .sort((a: any, b: any) => a.mapPosition - b.mapPosition)
+                                .map((member: any) => (
+                                <TableRow key={member.tag}>
+                                  <TableCell className="font-medium">#{member.mapPosition}</TableCell>
+                                  <TableCell>{member.name}</TableCell>
+                                  <TableCell>TH{member.townhallLevel}</TableCell>
+                                  <TableCell className="text-center">
+                                    {member.attacks?.length || 0}/2
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {member.attacks?.reduce((sum: number, atk: any) => sum + (atk.stars || 0), 0) || 0}
+                                    <Star className="h-3 w-3 inline ml-1 fill-yellow-500 text-yellow-500" />
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
