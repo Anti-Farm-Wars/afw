@@ -286,7 +286,7 @@ export default function ClanLookup() {
                       Clan Composition
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent>
                     {(() => {
                       const thDistribution: Record<number, number> = {};
                       clanData.memberList.forEach((member: any) => {
@@ -298,53 +298,38 @@ export default function ClanLookup() {
                         .map(Number)
                         .sort((a, b) => b - a);
                       
-                      const avgTH = (clanData.memberList.reduce((sum: number, m: any) => sum + m.townHallLevel, 0) / clanData.memberList.length).toFixed(1);
+                      const estimatedWeight = clanData.memberList.reduce((sum: number, m: any) => {
+                        return sum + (m.townHallLevel * 163000);
+                      }, 0);
                       
                       return (
-                        <>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="p-4 bg-background/50 rounded-lg text-center">
-                              <p className="text-sm text-muted-foreground mb-1">Total Members</p>
-                              <p className="text-2xl font-bold">{clanData.memberList.length}</p>
+                        <div className="bg-muted/30 rounded-lg p-6 border-2 border-border font-mono text-sm">
+                          <div className="space-y-2">
+                            <div className="text-center text-lg font-bold mb-3">
+                              🏰 Clan Composition 🏰
                             </div>
-                            <div className="p-4 bg-background/50 rounded-lg text-center">
-                              <p className="text-sm text-muted-foreground mb-1">Average TH</p>
-                              <p className="text-2xl font-bold">{avgTH}</p>
+                            <div className="text-center font-semibold mb-4">
+                              {clanData.name} (#{clanData.tag.replace('#', '')})
                             </div>
-                            <div className="p-4 bg-background/50 rounded-lg text-center">
-                              <p className="text-sm text-muted-foreground mb-1">Highest TH</p>
-                              <p className="text-2xl font-bold">TH{sortedTHs[0]}</p>
-                            </div>
-                            <div className="p-4 bg-background/50 rounded-lg text-center">
-                              <p className="text-sm text-muted-foreground mb-1">Lowest TH</p>
-                              <p className="text-2xl font-bold">TH{sortedTHs[sortedTHs.length - 1]}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4 bg-background/50 rounded-lg">
-                            <h4 className="font-semibold mb-4">Town Hall Distribution</h4>
-                            <div className="space-y-3">
+                            <div className="space-y-1 mb-4">
                               {sortedTHs.map(th => {
                                 const count = thDistribution[th];
-                                const percentage = (count / clanData.memberList.length) * 100;
                                 return (
-                                  <div key={th} className="space-y-1">
-                                    <div className="flex justify-between text-sm">
-                                      <span className="font-medium">TH{th}</span>
-                                      <span className="text-muted-foreground">{count} ({percentage.toFixed(1)}%)</span>
-                                    </div>
-                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                      <div 
-                                        className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300"
-                                        style={{ width: `${percentage}%` }}
-                                      />
-                                    </div>
+                                  <div key={th}>
+                                    🏠 TH {th}: {count}
                                   </div>
                                 );
                               })}
                             </div>
+                            <div className="border-t border-border my-4" />
+                            <div className="space-y-1">
+                              <div>Total Members: {clanData.memberList.length}</div>
+                              <div>
+                                ⚖️ Est. Weight: {estimatedWeight.toLocaleString()}
+                              </div>
+                            </div>
                           </div>
-                        </>
+                        </div>
                       );
                     })()}
                   </CardContent>
