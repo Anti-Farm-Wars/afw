@@ -140,8 +140,105 @@ Deno.serve(async (req) => {
 
         if (cwlResponse.ok) {
           const cwlData = await cwlResponse.json();
+          
+          // Fetch detailed war data for each war in the rounds
+          console.log('Fetching detailed war data for CWL rounds...');
+          const warDetails = [];
+          
+          for (const round of cwlData.rounds || []) {
+            for (const warTag of round.warTags || []) {
+              if (warTag && warTag !== '#0') {
+                try {
+                  const cleanWarTag = warTag.replace(/^#/, '');
+                  const encodedWarTag = encodeURIComponent(`#${cleanWarTag}`);
+                  const warUrl = `https://api.clashofclans.com/v1/clanwarleagues/wars/${encodedWarTag}`;
+                  
+                  const warResponse = await fetch(warUrl, {
+                    headers: {
+                      'Authorization': `Bearer ${cocToken}`,
+                      'Accept': 'application/json',
+                    },
+                  });
+                  
+                  if (warResponse.ok) {
+                    const warData = await warResponse.json();
+                    warDetails.push(warData);
+                    console.log(`Fetched war ${warTag}`);
+                  }
+                } catch (error) {
+                  console.log(`Error fetching war ${warTag}:`, error);
+                }
+              }
+            }
+          }
+          
+          // Calculate total stars and destruction for each clan
+          const clanStats = new Map();
+          
+          for (const war of warDetails) {
+            // Process clan stats
+            if (war.clan) {
+              const clanTag = war.clan.tag;
+              if (!clanStats.has(clanTag)) {
+                clanStats.set(clanTag, {
+                  name: war.clan.name,
+                  tag: clanTag,
+                  stars: 0,
+                  destructionPercentage: 0,
+                  attacks: 0,
+                  badgeUrls: war.clan.badgeUrls,
+                });
+              }
+              const stats = clanStats.get(clanTag);
+              stats.stars += war.clan.stars || 0;
+              stats.destructionPercentage += war.clan.destructionPercentage || 0;
+              stats.attacks += war.clan.attacks || 0;
+            }
+            
+            // Process opponent stats
+            if (war.opponent) {
+              const opponentTag = war.opponent.tag;
+              if (!clanStats.has(opponentTag)) {
+                clanStats.set(opponentTag, {
+                  name: war.opponent.name,
+                  tag: opponentTag,
+                  stars: 0,
+                  destructionPercentage: 0,
+                  attacks: 0,
+                  badgeUrls: war.opponent.badgeUrls,
+                });
+              }
+              const stats = clanStats.get(opponentTag);
+              stats.stars += war.opponent.stars || 0;
+              stats.destructionPercentage += war.opponent.destructionPercentage || 0;
+              stats.attacks += war.opponent.attacks || 0;
+            }
+          }
+          
+          // Calculate average destruction percentage
+          const warCount = warDetails.length / 2; // Each clan appears twice (once as clan, once as opponent)
+          for (const stats of clanStats.values()) {
+            if (stats.attacks > 0) {
+              stats.destructionPercentage = stats.destructionPercentage / warCount;
+            }
+          }
+          
+          // Update clan data with calculated stats
+          const enrichedClans = cwlData.clans.map((clan: any) => {
+            const stats = clanStats.get(clan.tag);
+            return {
+              ...clan,
+              stars: stats?.stars || 0,
+              destructionPercentage: stats?.destructionPercentage || 0,
+            };
+          });
+          
           return new Response(
-            JSON.stringify(cwlData),
+            JSON.stringify({
+              ...cwlData,
+              clans: enrichedClans,
+              warDetails: warDetails,
+            }),
             { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         } else {

@@ -3,9 +3,10 @@ import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Trophy, Users, Star, Award, Crown, Target, Swords } from "lucide-react";
+import { Search, Trophy, Star, Target, Swords, Shield, Flame } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ClanCWL() {
   const [clanTag, setClanTag] = useState("");
@@ -228,48 +229,161 @@ export default function ClanCWL() {
                 </Card>
               )}
 
-              {/* War Rounds */}
-              {cwlData.rounds && cwlData.rounds.length > 0 && (
+              {/* War Details with History */}
+              {cwlData.warDetails && cwlData.warDetails.length > 0 && (
                 <Card className="bg-gradient-to-br from-blue-500/5 via-cyan-500/5 to-teal-500/5 border-2 border-blue-500/20 shadow-2xl overflow-hidden">
                   <div className="absolute bottom-0 right-0 text-9xl opacity-5">⚔️</div>
                   <CardHeader className="relative">
                     <CardTitle className="flex items-center gap-3 text-2xl">
-                      <span className="animate-pulse text-3xl">🎯</span>
+                      <span className="animate-pulse text-3xl">⚔️</span>
                       <span className="bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 bg-clip-text text-transparent font-bold">
-                        War Rounds
+                        War Details & History
                       </span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="relative">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Tabs defaultValue="0" className="w-full">
+                      <TabsList className="grid w-full grid-cols-7 mb-4">
+                        {cwlData.rounds.map((_: any, roundIndex: number) => (
+                          <TabsTrigger key={roundIndex} value={roundIndex.toString()}>
+                            Round {roundIndex + 1}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      
                       {cwlData.rounds.map((round: any, roundIndex: number) => (
-                        <div 
-                          key={roundIndex} 
-                          className="p-5 bg-gradient-to-br from-background/80 to-background/40 backdrop-blur rounded-xl border border-border/50 hover-scale"
-                        >
-                          <div className="flex items-center gap-2 mb-4">
-                            <span className="text-2xl">⚔️</span>
-                            <h4 className="font-bold text-lg bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
-                              Round {roundIndex + 1}
-                            </h4>
+                        <TabsContent key={roundIndex} value={roundIndex.toString()}>
+                          <div className="grid grid-cols-1 gap-4">
+                            {cwlData.warDetails
+                              .filter((war: any) => round.warTags?.includes(war.tag))
+                              .map((war: any, warIndex: number) => (
+                                <Card key={warIndex} className="bg-gradient-to-br from-background/80 to-background/40 backdrop-blur border-border/50">
+                                  <CardHeader>
+                                    <CardTitle className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <Shield className="h-5 w-5 text-blue-500" />
+                                        <span className="text-lg">{war.clan.name}</span>
+                                        <span className="text-sm text-muted-foreground font-mono">{war.clan.tag}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-sm">
+                                        <span className={`font-bold ${
+                                          war.clan.stars > war.opponent.stars 
+                                            ? 'text-green-500' 
+                                            : war.clan.stars < war.opponent.stars 
+                                            ? 'text-red-500' 
+                                            : 'text-yellow-500'
+                                        }`}>
+                                          {war.clan.stars > war.opponent.stars 
+                                            ? '🏆 Victory' 
+                                            : war.clan.stars < war.opponent.stars 
+                                            ? '💀 Defeat' 
+                                            : '🤝 Draw'}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-sm text-muted-foreground font-mono">{war.opponent.tag}</span>
+                                        <span className="text-lg">{war.opponent.name}</span>
+                                        <Shield className="h-5 w-5 text-red-500" />
+                                      </div>
+                                    </CardTitle>
+                                  </CardHeader>
+                                  <CardContent>
+                                    {/* War Stats */}
+                                    <div className="grid grid-cols-3 gap-4 mb-6">
+                                      <div className="text-center p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                          <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                                          <p className="text-sm text-muted-foreground font-semibold">Stars</p>
+                                        </div>
+                                        <p className="text-3xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                                          {war.clan.stars} - {war.opponent.stars}
+                                        </p>
+                                      </div>
+                                      <div className="text-center p-4 bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-lg border border-orange-500/20">
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                          <Flame className="h-5 w-5 text-orange-500" />
+                                          <p className="text-sm text-muted-foreground font-semibold">Destruction</p>
+                                        </div>
+                                        <p className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                                          {war.clan.destructionPercentage.toFixed(1)}% - {war.opponent.destructionPercentage.toFixed(1)}%
+                                        </p>
+                                      </div>
+                                      <div className="text-center p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                                        <div className="flex items-center justify-center gap-2 mb-2">
+                                          <Target className="h-5 w-5 text-purple-500" />
+                                          <p className="text-sm text-muted-foreground font-semibold">Attacks</p>
+                                        </div>
+                                        <p className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                                          {war.clan.attacks} - {war.opponent.attacks}
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    {/* Attack History */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {/* Clan Attacks */}
+                                      <div>
+                                        <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
+                                          <Swords className="h-4 w-4 text-blue-500" />
+                                          {war.clan.name} Attacks
+                                        </h4>
+                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                          {war.clan.members?.map((member: any) => 
+                                            member.attacks?.map((attack: any, idx: number) => (
+                                              <div key={`${member.tag}-${idx}`} className="p-2 bg-muted/30 rounded border border-border/30 text-xs">
+                                                <div className="flex items-center justify-between">
+                                                  <span className="font-semibold">{member.name}</span>
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="flex items-center gap-1">
+                                                      <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                                      {attack.stars}
+                                                    </span>
+                                                    <span className="text-muted-foreground">
+                                                      {attack.destructionPercentage}%
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            ))
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Opponent Attacks */}
+                                      <div>
+                                        <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
+                                          <Swords className="h-4 w-4 text-red-500" />
+                                          {war.opponent.name} Attacks
+                                        </h4>
+                                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                                          {war.opponent.members?.map((member: any) => 
+                                            member.attacks?.map((attack: any, idx: number) => (
+                                              <div key={`${member.tag}-${idx}`} className="p-2 bg-muted/30 rounded border border-border/30 text-xs">
+                                                <div className="flex items-center justify-between">
+                                                  <span className="font-semibold">{member.name}</span>
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="flex items-center gap-1">
+                                                      <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                                      {attack.stars}
+                                                    </span>
+                                                    <span className="text-muted-foreground">
+                                                      {attack.destructionPercentage}%
+                                                    </span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            ))
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
                           </div>
-                          <div className="space-y-2">
-                            {round.warTags?.map((warTag: string, warIndex: number) => (
-                              <div 
-                                key={warIndex} 
-                                className="p-3 bg-gradient-to-r from-muted/30 to-muted/10 rounded-lg border border-border/30 hover:border-primary/50 transition-all"
-                              >
-                                <p className="text-sm font-mono flex items-center gap-2">
-                                  <Swords className="h-4 w-4 text-primary" />
-                                  <span className="text-muted-foreground">War {warIndex + 1}:</span>
-                                  <span className="text-foreground font-semibold">{warTag}</span>
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+                        </TabsContent>
                       ))}
-                    </div>
+                    </Tabs>
                   </CardContent>
                 </Card>
               )}
