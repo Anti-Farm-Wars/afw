@@ -36,11 +36,15 @@ export default function ClanCWL() {
       
       if (response.ok) {
         console.log('CWL Data:', data);
-        console.log('War Details:', data.warDetails);
+        console.log('War Details Array:', data.warDetails);
+        console.log('War Details Length:', data.warDetails?.length);
         console.log('Rounds:', data.rounds);
-        if (data.warDetails && data.rounds) {
+        if (data.warDetails && data.warDetails.length > 0) {
+          console.log('First war detail FULL:', JSON.stringify(data.warDetails[0], null, 2));
+          console.log('All war tags from details:', data.warDetails.map((w: any) => w.tag || w.warTag || 'NO TAG'));
+        }
+        if (data.rounds && data.rounds.length > 0) {
           console.log('First round war tags:', data.rounds[0]?.warTags);
-          console.log('First war detail tag:', data.warDetails[0]?.tag);
         }
         setCwlData(data);
       } else {
