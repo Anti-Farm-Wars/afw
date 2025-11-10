@@ -146,6 +146,7 @@ Deno.serve(async (req) => {
           const warDetails = [];
           
           for (const round of cwlData.rounds || []) {
+            console.log(`Processing round with ${round.warTags?.length || 0} war tags`);
             for (const warTag of round.warTags || []) {
               if (warTag && warTag !== '#0') {
                 try {
@@ -153,6 +154,7 @@ Deno.serve(async (req) => {
                   const encodedWarTag = encodeURIComponent(`#${cleanWarTag}`);
                   const warUrl = `https://api.clashofclans.com/v1/clanwarleagues/wars/${encodedWarTag}`;
                   
+                  console.log(`Fetching war: ${warTag}`);
                   const warResponse = await fetch(warUrl, {
                     headers: {
                       'Authorization': `Bearer ${cocToken}`,
@@ -163,7 +165,9 @@ Deno.serve(async (req) => {
                   if (warResponse.ok) {
                     const warData = await warResponse.json();
                     warDetails.push(warData);
-                    console.log(`Fetched war ${warTag}`);
+                    console.log(`✅ Fetched war ${warTag} - State: ${warData.state}`);
+                  } else {
+                    console.log(`❌ Failed to fetch war ${warTag}: ${warResponse.status}`);
                   }
                 } catch (error) {
                   console.log(`Error fetching war ${warTag}:`, error);
@@ -171,6 +175,8 @@ Deno.serve(async (req) => {
               }
             }
           }
+          
+          console.log(`Total war details fetched: ${warDetails.length}`);
           
           // Calculate total stars and destruction for each clan
           const clanStats = new Map();

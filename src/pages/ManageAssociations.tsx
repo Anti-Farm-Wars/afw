@@ -83,14 +83,17 @@ export default function ManageAssociations() {
 
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (!user) {
+      if (authError || !user) {
         toast({
-          title: "Error",
-          description: "You must be logged in",
+          title: "Authentication Required",
+          description: "Please log in to add associations. Redirecting to login...",
           variant: "destructive",
         });
+        setTimeout(() => {
+          window.location.href = '/staff-auth';
+        }, 2000);
         return;
       }
 
@@ -102,7 +105,18 @@ export default function ManageAssociations() {
         updated_by: user.id,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42501' || error.message?.includes('permission')) {
+          toast({
+            title: "Permission Denied",
+            description: "You don't have permission to add associations. Please contact an administrator.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       toast({
         title: "Success",

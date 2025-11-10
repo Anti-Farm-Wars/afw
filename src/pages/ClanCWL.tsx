@@ -229,8 +229,91 @@ export default function ClanCWL() {
                 </Card>
               )}
 
+              {/* Win Probability Stats */}
+              {cwlData.clans && cwlData.clans.length > 0 && (
+                <Card className="bg-gradient-to-br from-green-500/5 via-emerald-500/5 to-teal-500/5 border-2 border-green-500/20 shadow-2xl overflow-hidden">
+                  <div className="absolute top-0 right-0 text-9xl opacity-5">📈</div>
+                  <CardHeader className="relative">
+                    <CardTitle className="flex items-center gap-3 text-2xl">
+                      <span className="animate-pulse text-3xl">🎯</span>
+                      <span className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 bg-clip-text text-transparent font-bold">
+                        Win Probability Analysis
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="relative">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {cwlData.clans
+                        .sort((a: any, b: any) => {
+                          const aScore = (a.stars || 0) * 100 + (a.destructionPercentage || 0);
+                          const bScore = (b.stars || 0) * 100 + (b.destructionPercentage || 0);
+                          return bScore - aScore;
+                        })
+                        .map((clan: any, index: number) => {
+                          const totalStars = cwlData.clans.reduce((sum: number, c: any) => sum + (c.stars || 0), 0);
+                          const winProbability = totalStars > 0 
+                            ? ((clan.stars || 0) / totalStars * 100).toFixed(1)
+                            : 0;
+                          
+                          return (
+                            <Card key={clan.tag} className={`bg-gradient-to-br ${
+                              index === 0 
+                                ? 'from-amber-500/10 to-yellow-500/10 border-2 border-amber-500/30' 
+                                : 'from-background/80 to-background/40 border border-border/50'
+                            }`}>
+                              <CardContent className="pt-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                  {clan.badgeUrls?.small && (
+                                    <img 
+                                      src={clan.badgeUrls.small} 
+                                      alt="" 
+                                      className="h-12 w-12 rounded-lg"
+                                    />
+                                  )}
+                                  <div className="flex-1">
+                                    <p className="font-bold text-sm">{clan.name}</p>
+                                    <p className="text-xs text-muted-foreground font-mono">{clan.tag}</p>
+                                  </div>
+                                  {index === 0 && <span className="text-2xl">🏆</span>}
+                                </div>
+                                
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm text-muted-foreground">Win Chance</span>
+                                    <span className="text-2xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                                      {winProbability}%
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="w-full bg-muted/30 rounded-full h-3 overflow-hidden">
+                                    <div 
+                                      className="bg-gradient-to-r from-green-500 to-emerald-500 h-full rounded-full transition-all duration-500"
+                                      style={{ width: `${winProbability}%` }}
+                                    />
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-2 pt-2">
+                                    <div className="text-center p-2 bg-background/50 rounded">
+                                      <p className="text-xs text-muted-foreground">Stars</p>
+                                      <p className="font-bold text-yellow-500">{clan.stars || 0}</p>
+                                    </div>
+                                    <div className="text-center p-2 bg-background/50 rounded">
+                                      <p className="text-xs text-muted-foreground">Destruction</p>
+                                      <p className="font-bold text-orange-500">{(clan.destructionPercentage || 0).toFixed(1)}%</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* War Details with History */}
-              {cwlData.warDetails && cwlData.warDetails.length > 0 && (
+              {cwlData.warDetails && cwlData.warDetails.length > 0 ? (
                 <Card className="bg-gradient-to-br from-blue-500/5 via-cyan-500/5 to-teal-500/5 border-2 border-blue-500/20 shadow-2xl overflow-hidden">
                   <div className="absolute bottom-0 right-0 text-9xl opacity-5">⚔️</div>
                   <CardHeader className="relative">
@@ -384,6 +467,14 @@ export default function ClanCWL() {
                         </TabsContent>
                       ))}
                     </Tabs>
+                  </CardContent>
+                </Card>
+              ) : cwlData && (
+                <Card className="bg-muted/50 border-border/50">
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-muted-foreground">
+                      ⚠️ War details are not yet available. Check back when wars are in progress or completed.
+                    </p>
                   </CardContent>
                 </Card>
               )}
