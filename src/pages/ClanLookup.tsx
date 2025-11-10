@@ -34,9 +34,14 @@ export default function ClanLookup() {
     setWarLog(null);
     
     try {
-      const cleanTag = clanTag.replace(/^#/, '');
+      // Clean the tag: remove #, parentheses, URL encoding, and whitespace
+      let cleanTag = clanTag.trim();
+      cleanTag = decodeURIComponent(cleanTag); // Decode any URL encoding
+      cleanTag = cleanTag.replace(/[#()%]/g, ''); // Remove #, (, ), %
+      cleanTag = cleanTag.trim();
+      
       const response = await fetch(
-        `https://nimsraksgrdmtabainln.supabase.co/functions/v1/coc-api/clan/${encodeURIComponent(cleanTag)}`
+        `https://nimsraksgrdmtabainln.supabase.co/functions/v1/coc-api/clan/${cleanTag}`
       );
       const data = await response.json();
       
