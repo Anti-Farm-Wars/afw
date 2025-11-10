@@ -164,6 +164,8 @@ Deno.serve(async (req) => {
                   
                   if (warResponse.ok) {
                     const warData = await warResponse.json();
+                    // Add the war tag to the war data for easier filtering
+                    warData.tag = warTag;
                     warDetails.push(warData);
                     console.log(`✅ Fetched war ${warTag} - State: ${warData.state}`);
                   } else {
