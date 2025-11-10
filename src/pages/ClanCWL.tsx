@@ -36,6 +36,12 @@ export default function ClanCWL() {
       
       if (response.ok) {
         console.log('CWL Data:', data);
+        console.log('War Details:', data.warDetails);
+        console.log('Rounds:', data.rounds);
+        if (data.warDetails && data.rounds) {
+          console.log('First round war tags:', data.rounds[0]?.warTags);
+          console.log('First war detail tag:', data.warDetails[0]?.tag);
+        }
         setCwlData(data);
       } else {
         toast({
@@ -334,12 +340,15 @@ export default function ClanCWL() {
                         ))}
                       </TabsList>
                       
-                      {cwlData.rounds.map((round: any, roundIndex: number) => (
+                      {cwlData.rounds.map((round: any, roundIndex: number) => {
+                        const roundWars = cwlData.warDetails.filter((war: any) => round.warTags?.includes(war.tag));
+                        console.log(`Round ${roundIndex + 1} war tags:`, round.warTags);
+                        console.log(`Round ${roundIndex + 1} filtered wars:`, roundWars.length);
+                        
+                        return (
                         <TabsContent key={roundIndex} value={roundIndex.toString()}>
                           <div className="grid grid-cols-1 gap-4">
-                            {cwlData.warDetails
-                              .filter((war: any) => round.warTags?.includes(war.tag))
-                              .map((war: any, warIndex: number) => (
+                            {roundWars.length > 0 ? roundWars.map((war: any, warIndex: number) => (
                                 <Card key={warIndex} className="bg-gradient-to-br from-background/80 to-background/40 backdrop-blur border-border/50">
                                   <CardHeader>
                                     <CardTitle className="flex items-center justify-between">
@@ -462,10 +471,17 @@ export default function ClanCWL() {
                                     </div>
                                   </CardContent>
                                 </Card>
-                              ))}
+                              )) : (
+                                <div className="text-center p-8 bg-muted/30 rounded-lg border border-border/30">
+                                  <p className="text-muted-foreground">
+                                    No war details available for Round {roundIndex + 1}
+                                  </p>
+                                </div>
+                              )}
                           </div>
                         </TabsContent>
-                      ))}
+                        );
+                      })}
                     </Tabs>
                   </CardContent>
                 </Card>
