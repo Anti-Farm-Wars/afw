@@ -13,6 +13,7 @@ export default function ClanCWL() {
   const [clanTag, setClanTag] = useState("");
   const [cwlData, setCwlData] = useState<any>(null);
   const [clanBasicData, setClanBasicData] = useState<any>(null);
+  const [cwlHistory, setCwlHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -29,31 +30,44 @@ export default function ClanCWL() {
     setLoading(true);
     setCwlData(null);
     setClanBasicData(null);
+    setCwlHistory([]);
     
     try {
       const cleanTag = clanTag.replace(/^#/, '');
       
-      // Fetch basic clan data first
-      const clanResponse = await fetch(
-        `https://nimsraksgrdmtabainln.supabase.co/functions/v1/coc-api/clan/${encodeURIComponent(cleanTag)}`
-      );
-      const clanData = await clanResponse.json();
+      // Fetch all data in parallel for faster loading
+      const [clanResponse, cwlResponse] = await Promise.all([
+        fetch(`https://nimsraksgrdmtabainln.supabase.co/functions/v1/coc-api/clan/${encodeURIComponent(cleanTag)}`),
+        fetch(`https://nimsraksgrdmtabainln.supabase.co/functions/v1/coc-api/clan/${encodeURIComponent(cleanTag)}/cwl`)
+      ]);
+
+      const [clanData, cwlDataResponse] = await Promise.all([
+        clanResponse.json(),
+        cwlResponse.json()
+      ]);
+      
       if (clanResponse.ok) {
         setClanBasicData(clanData.clan);
       }
       
-      // Then fetch CWL data
-      const cwlResponse = await fetch(
-        `https://nimsraksgrdmtabainln.supabase.co/functions/v1/coc-api/clan/${encodeURIComponent(cleanTag)}/cwl`
-      );
-      const data = await cwlResponse.json();
-      
       if (cwlResponse.ok) {
-        setCwlData(data);
+        setCwlData(cwlDataResponse);
+        
+        // Store current season data in history
+        if (cwlDataResponse.season && cwlDataResponse.clans) {
+          const currentSeasonHistory = {
+            season: cwlDataResponse.season,
+            state: cwlDataResponse.state,
+            clans: cwlDataResponse.clans,
+            warDetails: cwlDataResponse.warDetails,
+            rounds: cwlDataResponse.rounds
+          };
+          setCwlHistory([currentSeasonHistory]);
+        }
       } else {
         toast({
           title: "Error",
-          description: data.error || "Failed to fetch CWL data",
+          description: cwlDataResponse.error || "Failed to fetch CWL data",
           variant: "destructive",
         });
       }
@@ -315,13 +329,24 @@ export default function ClanCWL() {
                       </TabsList>
 
                       {cwlData.rounds?.map((round: any, roundIndex: number) => {
-                        // Find the war involving the searched clan
-                        const searchedClanWar = cwlData.warDetails.find((war: any) => {
-                          const clanTag = war.clan?.tag?.replace(/^#/, '').toUpperCase();
-                          const opponentTag = war.opponent?.tag?.replace(/^#/, '').toUpperCase();
-                          const searchTag = clanBasicData.tag?.replace(/^#/, '').toUpperCase();
-                          return clanTag === searchTag || opponentTag === searchTag;
-                        });
+                        // Find the war involving the searched clan for this specific round
+                        const searchedClanWar = round.warTags && round.warTags.length > 0 
+                          ? cwlData.warDetails?.find((war: any) => {
+                              const warTag = war.tag?.replace(/^#/, '').toUpperCase();
+                              return round.warTags.some((rt: string) => rt.replace(/^#/, '').toUpperCase() === warTag);
+                            }).then((matchingWar: any) => {
+                              if (!matchingWar) return null;
+                              const clanTag = matchingWar.clan?.tag?.replace(/^#/, '').toUpperCase();
+                              const opponentTag = matchingWar.opponent?.tag?.replace(/^#/, '').toUpperCase();
+                              const searchTag = clanBasicData.tag?.replace(/^#/, '').toUpperCase();
+                              return (clanTag === searchTag || opponentTag === searchTag) ? matchingWar : null;
+                            })
+                          : cwlData.warDetails?.find((war: any) => {
+                              const clanTag = war.clan?.tag?.replace(/^#/, '').toUpperCase();
+                              const opponentTag = war.opponent?.tag?.replace(/^#/, '').toUpperCase();
+                              const searchTag = clanBasicData.tag?.replace(/^#/, '').toUpperCase();
+                              return clanTag === searchTag || opponentTag === searchTag;
+                            });
 
                         const participants = searchedClanWar ? getWarParticipants(searchedClanWar, clanBasicData.tag) : null;
 
@@ -435,6 +460,77 @@ export default function ClanCWL() {
                         );
                       })}
                     </Tabs>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* CWL History */}
+              {cwlHistory && cwlHistory.length > 0 && (
+                <Card className="bg-gradient-to-br from-amber-500/5 via-yellow-500/5 to-orange-500/5 border-2 border-amber-500/20 shadow-2xl overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5" />
+                      <span className="bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                        CWL History
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {cwlHistory.map((history: any, idx: number) => {
+                        const searchedClan = history.clans?.find((c: any) => 
+                          c.tag?.replace(/^#/, '').toUpperCase() === clanBasicData?.tag?.replace(/^#/, '').toUpperCase()
+                        );
+                        const clanRank = history.clans
+                          ?.sort((a: any, b: any) => {
+                            if (b.stars !== a.stars) return b.stars - a.stars;
+                            return b.destructionPercentage - a.destructionPercentage;
+                          })
+                          .findIndex((c: any) => 
+                            c.tag?.replace(/^#/, '').toUpperCase() === clanBasicData?.tag?.replace(/^#/, '').toUpperCase()
+                          ) + 1;
+
+                        return (
+                          <Card key={idx} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50">
+                            <CardContent className="pt-4">
+                              <div className="flex items-center justify-between mb-4">
+                                <div>
+                                  <p className="font-bold text-lg">Season {history.season}</p>
+                                  <p className="text-sm text-muted-foreground capitalize">{history.state}</p>
+                                </div>
+                                {clanRank && (
+                                  <div className="text-center">
+                                    <p className="text-3xl font-bold">
+                                      {clanRank === 1 ? '🥇' : clanRank === 2 ? '🥈' : clanRank === 3 ? '🥉' : `#${clanRank}`}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">Rank</p>
+                                  </div>
+                                )}
+                              </div>
+                              {searchedClan && (
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div className="text-center p-3 bg-gradient-to-br from-yellow-500/10 to-amber-500/10 rounded-lg border border-yellow-500/20">
+                                    <Star className="h-4 w-4 mx-auto mb-1 fill-yellow-500 text-yellow-500" />
+                                    <p className="text-xl font-bold">{searchedClan.stars || 0}</p>
+                                    <p className="text-xs text-muted-foreground">Stars</p>
+                                  </div>
+                                  <div className="text-center p-3 bg-gradient-to-br from-orange-500/10 to-red-500/10 rounded-lg border border-orange-500/20">
+                                    <Target className="h-4 w-4 mx-auto mb-1" />
+                                    <p className="text-xl font-bold">{searchedClan.destructionPercentage?.toFixed(1) || 0}%</p>
+                                    <p className="text-xs text-muted-foreground">Destruction</p>
+                                  </div>
+                                  <div className="text-center p-3 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
+                                    <Swords className="h-4 w-4 mx-auto mb-1" />
+                                    <p className="text-xl font-bold">{history.rounds?.length || 0}</p>
+                                    <p className="text-xs text-muted-foreground">Rounds</p>
+                                  </div>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
                   </CardContent>
                 </Card>
               )}

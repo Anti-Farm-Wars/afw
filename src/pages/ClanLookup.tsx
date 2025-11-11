@@ -123,25 +123,6 @@ export default function ClanLookup() {
 
           {clanData && (
             <div className="space-y-6 animate-fade-in">
-              <div className="flex justify-end">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowJson(!showJson)}
-                >
-                  {showJson ? "Hide" : "Show"} JSON
-                </Button>
-              </div>
-
-              {showJson && (
-                <Card className="bg-muted">
-                  <CardContent className="pt-6">
-                    <pre className="text-xs overflow-auto max-h-96">
-                      {JSON.stringify({ clan: clanData, association }, null, 2)}
-                    </pre>
-                  </CardContent>
-                </Card>
-              )}
 
               {association && (
                 <Card className="bg-gradient-to-br from-amber-500/10 via-yellow-500/10 to-orange-500/10 border-2 border-amber-500/30 shadow-xl">
@@ -529,6 +510,59 @@ export default function ClanLookup() {
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* War History */}
+              {warLog && warLog.items && warLog.items.length > 0 && (
+                <Card className="bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 border-2 border-indigo-500/20 shadow-2xl overflow-hidden">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="h-5 w-5" />
+                      <span className="bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                        War History ({warLog.items.length} Wars)
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {warLog.items.map((war: any, index: number) => (
+                        <Card key={index} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50">
+                          <CardContent className="pt-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="text-center p-3 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
+                                <p className="text-xs text-muted-foreground mb-1">Your Clan</p>
+                                <p className="font-bold text-sm mb-2">{war.clan?.name}</p>
+                                <div className="flex items-center justify-center gap-2">
+                                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                                  <span className="font-bold">{war.clan?.stars || 0}</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">{war.clan?.destructionPercentage?.toFixed(1) || 0}%</p>
+                              </div>
+
+                              <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-br from-background/80 to-background/40 rounded-lg">
+                                <p className="text-2xl font-bold mb-1">
+                                  {war.result === 'win' ? '🎉 Win' : war.result === 'lose' ? '😢 Loss' : '🤝 Tie'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">{war.endTime ? new Date(war.endTime).toLocaleDateString() : 'N/A'}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{war.teamSize}v{war.teamSize}</p>
+                              </div>
+
+                              <div className="text-center p-3 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-lg border border-red-500/20">
+                                <p className="text-xs text-muted-foreground mb-1">Opponent</p>
+                                <p className="font-bold text-sm mb-2">{war.opponent?.name}</p>
+                                <div className="flex items-center justify-center gap-2">
+                                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                                  <span className="font-bold">{war.opponent?.stars || 0}</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">{war.opponent?.destructionPercentage?.toFixed(1) || 0}%</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>

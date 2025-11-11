@@ -115,23 +115,14 @@ export default function PlayerLookup() {
               <Card className="bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 border-2 border-blue-500/20 shadow-2xl overflow-hidden">
                 <div className="absolute top-0 right-0 text-9xl opacity-10">👤</div>
                 <CardHeader className="relative">
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="text-5xl animate-pulse">⚔️</div>
-                      <div>
-                        <CardTitle className="text-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent font-bold">
-                          {playerData.name}
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground font-mono mt-1">{playerData.tag}</p>
-                      </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-5xl animate-pulse">⚔️</div>
+                    <div>
+                      <CardTitle className="text-3xl bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent font-bold">
+                        {playerData.name}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground font-mono mt-1">{playerData.tag}</p>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setShowJson(!showJson)}
-                    >
-                      {showJson ? "Hide" : "Show"} JSON
-                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="relative">
@@ -184,16 +175,6 @@ export default function PlayerLookup() {
                   </div>
                 </CardContent>
               </Card>
-
-              {showJson && (
-                <Card className="bg-muted">
-                  <CardContent className="pt-6">
-                    <pre className="text-xs overflow-auto max-h-96">
-                      {JSON.stringify(playerData, null, 2)}
-                    </pre>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Clan & League Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -394,7 +375,19 @@ export default function PlayerLookup() {
                       {playerData.troops && playerData.troops.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                           {playerData.troops
-                            .filter((troop: any) => !troop.name.toLowerCase().includes('pet') && troop.village !== 'builderBase')
+                            .filter((troop: any) => {
+                              const isPet = troop.name.toLowerCase().includes('pet') || 
+                                           troop.name.toLowerCase().includes('unicorn') ||
+                                           troop.name.toLowerCase().includes('yak') ||
+                                           troop.name.toLowerCase().includes('phoenix') ||
+                                           troop.name.toLowerCase().includes('owl') ||
+                                           troop.name.toLowerCase().includes('diggy') ||
+                                           troop.name.toLowerCase().includes('frosty') ||
+                                           troop.name.toLowerCase().includes('electro owl') ||
+                                           troop.name.toLowerCase().includes('mighty yak') ||
+                                           troop.name.toLowerCase().includes('l.a.s.s.i');
+                              return !isPet && troop.village !== 'builderBase';
+                            })
                             .map((troop: any) => (
                             <Card key={troop.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
                               <CardContent className="pt-4 text-center">
@@ -466,7 +459,19 @@ export default function PlayerLookup() {
                     </CardHeader>
                     <CardContent>
                       {(() => {
-                        const pets = playerData.pets || playerData.heroePets || (playerData.troops?.filter((t: any) => t.name.toLowerCase().includes('pet'))) || [];
+                        const pets = playerData.pets || playerData.heroePets || (playerData.troops?.filter((t: any) => {
+                          const isPet = t.name.toLowerCase().includes('pet') || 
+                                       t.name.toLowerCase().includes('unicorn') ||
+                                       t.name.toLowerCase().includes('yak') ||
+                                       t.name.toLowerCase().includes('phoenix') ||
+                                       t.name.toLowerCase().includes('owl') ||
+                                       t.name.toLowerCase().includes('diggy') ||
+                                       t.name.toLowerCase().includes('frosty') ||
+                                       t.name.toLowerCase().includes('electro owl') ||
+                                       t.name.toLowerCase().includes('mighty yak') ||
+                                       t.name.toLowerCase().includes('l.a.s.s.i');
+                          return isPet;
+                        })) || [];
                         return pets.length > 0 ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {pets.map((pet: any) => (
