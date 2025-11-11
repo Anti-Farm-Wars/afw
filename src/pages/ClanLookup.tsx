@@ -7,6 +7,7 @@ import { Search, Shield, Users, Trophy, Star, ExternalLink, Crown, Swords, Award
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { mapCoCRole, getRoleEmoji } from "@/utils/cocRoleMapping";
 
 // War weight data based on TH level
 const TH_WAR_WEIGHTS: Record<number, number> = {
@@ -419,9 +420,9 @@ export default function ClanLookup() {
                                 </Link>
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-1">
-                                  {member.role === 'leader' && <Crown className="h-3 w-3 text-amber-500" />}
-                                  <span className="capitalize">{member.role}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-base">{getRoleEmoji(member.role)}</span>
+                                  <span>{mapCoCRole(member.role)}</span>
                                 </div>
                               </TableCell>
                               <TableCell>

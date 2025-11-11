@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { getHeroIcon, getTroopIcon, getPetIcon, getSpellIcon } from "@/utils/cocImageMapping";
 
 export default function PlayerLookup() {
   const [playerTag, setPlayerTag] = useState("");
@@ -16,8 +17,22 @@ export default function PlayerLookup() {
   const [showJson, setShowJson] = useState(false);
   const { toast } = useToast();
 
-  const searchPlayer = async () => {
-    if (!playerTag.trim()) {
+  useEffect(() => {
+    // Check if there's a stored player tag from clan lookup
+    const storedTag = localStorage.getItem('playerLookupTag');
+    if (storedTag) {
+      setPlayerTag(storedTag);
+      localStorage.removeItem('playerLookupTag');
+      // Auto-search after a short delay
+      setTimeout(() => {
+        searchPlayer(storedTag);
+      }, 100);
+    }
+  }, []);
+
+  const searchPlayer = async (tagOverride?: string) => {
+    const tagToSearch = tagOverride || playerTag;
+    if (!tagToSearch.trim()) {
       toast({
         title: "Error",
         description: "Please enter a player tag",
@@ -29,7 +44,7 @@ export default function PlayerLookup() {
     setLoading(true);
     try {
       // Clean the tag: remove #, parentheses, URL encoding, and whitespace
-      let cleanTag = playerTag.trim();
+      let cleanTag = tagToSearch.trim();
       cleanTag = decodeURIComponent(cleanTag);
       cleanTag = cleanTag.replace(/[#()%]/g, '');
       cleanTag = cleanTag.trim();
@@ -86,7 +101,7 @@ export default function PlayerLookup() {
                   onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
                   className="flex-1 bg-background/50"
                 />
-                <Button onClick={searchPlayer} disabled={loading} variant="hero">
+                <Button onClick={() => searchPlayer()} disabled={loading} variant="hero">
                   <Search className="h-4 w-4 mr-2" />
                   {loading ? "Searching..." : "Search"}
                 </Button>
@@ -323,10 +338,7 @@ export default function PlayerLookup() {
                               <CardContent className="pt-6">
                                 <div className="flex items-center gap-3 mb-3">
                                   <div className="text-3xl">
-                                    {hero.name.includes('King') ? '🤴' : 
-                                     hero.name.includes('Queen') ? '👸' : 
-                                     hero.name.includes('Warden') ? '🧙' : 
-                                     hero.name.includes('Champion') ? '⚡' : '👤'}
+                                    {getHeroIcon(hero.name)}
                                   </div>
                                   <div className="flex-1">
                                     <p className="font-bold text-sm">{hero.name}</p>
@@ -384,8 +396,9 @@ export default function PlayerLookup() {
                           {playerData.troops
                             .filter((troop: any) => !troop.name.toLowerCase().includes('pet') && troop.village !== 'builderBase')
                             .map((troop: any) => (
-                            <Card key={troop.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50">
+                            <Card key={troop.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
                               <CardContent className="pt-4 text-center">
+                                <div className="text-2xl mb-2">{getTroopIcon(troop.name)}</div>
                                 <p className="text-xs font-semibold mb-2 truncate">{troop.name}</p>
                                 <p className="text-sm text-muted-foreground mb-1">{troop.village}</p>
                                 <div className="flex items-center justify-center gap-2">
@@ -419,8 +432,9 @@ export default function PlayerLookup() {
                       {playerData.spells && playerData.spells.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                           {playerData.spells.map((spell: any) => (
-                            <Card key={spell.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50">
+                            <Card key={spell.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
                               <CardContent className="pt-4 text-center">
+                                <div className="text-2xl mb-2">{getSpellIcon(spell.name)}</div>
                                 <p className="text-xs font-semibold mb-2 truncate">{spell.name}</p>
                                 <p className="text-sm text-muted-foreground mb-1">{spell.village}</p>
                                 <div className="flex items-center justify-center gap-2">
@@ -459,7 +473,7 @@ export default function PlayerLookup() {
                               <Card key={pet.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
                                 <CardContent className="pt-6">
                                   <div className="flex items-center gap-3 mb-3">
-                                    <div className="text-3xl">🐾</div>
+                                    <div className="text-3xl">{getPetIcon(pet.name)}</div>
                                     <div className="flex-1">
                                       <p className="font-bold text-sm">{pet.name}</p>
                                       <p className="text-xs text-muted-foreground">{pet.village}</p>
