@@ -381,7 +381,9 @@ export default function PlayerLookup() {
                     <CardContent>
                       {playerData.troops && playerData.troops.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                          {playerData.troops.map((troop: any) => (
+                          {playerData.troops
+                            .filter((troop: any) => !troop.name.toLowerCase().includes('pet') && troop.village !== 'builderBase')
+                            .map((troop: any) => (
                             <Card key={troop.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50">
                               <CardContent className="pt-4 text-center">
                                 <p className="text-xs font-semibold mb-2 truncate">{troop.name}</p>
@@ -449,32 +451,35 @@ export default function PlayerLookup() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {playerData.heroePets && playerData.heroePets.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {playerData.heroePets.map((pet: any) => (
-                            <Card key={pet.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
-                              <CardContent className="pt-6">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="text-3xl">🐾</div>
-                                  <div className="flex-1">
-                                    <p className="font-bold text-sm">{pet.name}</p>
-                                    <p className="text-xs text-muted-foreground">{pet.village}</p>
+                      {(() => {
+                        const pets = playerData.pets || playerData.heroePets || (playerData.troops?.filter((t: any) => t.name.toLowerCase().includes('pet'))) || [];
+                        return pets.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {pets.map((pet: any) => (
+                              <Card key={pet.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
+                                <CardContent className="pt-6">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className="text-3xl">🐾</div>
+                                    <div className="flex-1">
+                                      <p className="font-bold text-sm">{pet.name}</p>
+                                      <p className="text-xs text-muted-foreground">{pet.village}</p>
+                                    </div>
                                   </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-sm">
-                                    <span className="text-muted-foreground">Level</span>
-                                    <span className="font-bold">{pet.level} / {pet.maxLevel}</span>
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-muted-foreground">Level</span>
+                                      <span className="font-bold">{pet.level} / {pet.maxLevel}</span>
+                                    </div>
+                                    <Progress value={(pet.level / pet.maxLevel) * 100} className="h-2" />
                                   </div>
-                                  <Progress value={(pet.level / pet.maxLevel) * 100} className="h-2" />
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-center text-muted-foreground py-8">No pets data available</p>
-                      )}
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-center text-muted-foreground py-8">No pets data available</p>
+                        );
+                      })()}
                     </CardContent>
                   </Card>
                 </TabsContent>
