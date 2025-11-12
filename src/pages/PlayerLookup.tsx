@@ -376,16 +376,20 @@ export default function PlayerLookup() {
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                           {playerData.troops
                             .filter((troop: any) => {
-                              const isPet = troop.name.toLowerCase().includes('pet') || 
-                                           troop.name.toLowerCase().includes('unicorn') ||
-                                           troop.name.toLowerCase().includes('yak') ||
-                                           troop.name.toLowerCase().includes('phoenix') ||
-                                           troop.name.toLowerCase().includes('owl') ||
-                                           troop.name.toLowerCase().includes('diggy') ||
-                                           troop.name.toLowerCase().includes('frosty') ||
-                                           troop.name.toLowerCase().includes('electro owl') ||
-                                           troop.name.toLowerCase().includes('mighty yak') ||
-                                           troop.name.toLowerCase().includes('l.a.s.s.i');
+                              const petNames = [
+                                'L.A.S.S.I',
+                                'Electro Owl',
+                                'Mighty Yak',
+                                'Unicorn',
+                                'Frosty',
+                                'Diggy',
+                                'Poison Lizard',
+                                'Phoenix',
+                                'Spirit Fox',
+                                'Angry Jelly',
+                                'Sneaky',
+                              ];
+                              const isPet = petNames.some(pet => troop.name.toLowerCase() === pet.toLowerCase());
                               return !isPet && troop.village !== 'builderBase';
                             })
                             .map((troop: any) => (

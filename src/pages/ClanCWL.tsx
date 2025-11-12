@@ -438,19 +438,45 @@ export default function ClanCWL() {
                                     </div>
                                   </div>
 
-                                  {/* War Result */}
-                                  <div className="text-center p-4 bg-gradient-to-r from-background/80 to-background/40 rounded-lg">
-                                    <p className="text-sm text-muted-foreground mb-1">Result</p>
-                                    <p className="text-xl md:text-2xl font-bold capitalize">
-                                      {searchedClanWar.state === 'warEnded' 
-                                        ? (participants.searchedClan.stars > participants.opponent.stars 
-                                            ? '🎉 Victory!' 
-                                            : participants.searchedClan.stars < participants.opponent.stars 
-                                            ? '😢 Defeat' 
-                                            : '🤝 Draw')
-                                        : searchedClanWar.state}
-                                    </p>
-                                  </div>
+                                   {/* War Result & Win Probability */}
+                                   <div className="space-y-3">
+                                     <div className="text-center p-4 bg-gradient-to-r from-background/80 to-background/40 rounded-lg">
+                                       <p className="text-sm text-muted-foreground mb-1">Result</p>
+                                       <p className="text-xl md:text-2xl font-bold capitalize">
+                                         {searchedClanWar.state === 'warEnded' 
+                                           ? (participants.searchedClan.stars > participants.opponent.stars 
+                                               ? '🎉 Victory!' 
+                                               : participants.searchedClan.stars < participants.opponent.stars 
+                                               ? '😢 Defeat' 
+                                               : '🤝 Draw')
+                                         : searchedClanWar.state}
+                                     </p>
+                                   </div>
+                                   
+                                   {/* Win Probability */}
+                                   <div className="text-center p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                                     <p className="text-sm text-muted-foreground mb-2">Win Probability</p>
+                                     {(() => {
+                                       const totalStars = participants.searchedClan.stars + participants.opponent.stars;
+                                       const winProb = totalStars > 0 
+                                         ? ((participants.searchedClan.stars / totalStars) * 100).toFixed(1) 
+                                         : '50.0';
+                                       return (
+                                         <div className="space-y-2">
+                                           <p className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                                             {winProb}%
+                                           </p>
+                                           <div className="w-full bg-muted/30 rounded-full h-2">
+                                             <div 
+                                               className="bg-gradient-to-r from-purple-500 to-pink-500 h-full rounded-full transition-all"
+                                               style={{ width: `${winProb}%` }}
+                                             />
+                                           </div>
+                                         </div>
+                                       );
+                                     })()}
+                                   </div>
+                                 </div>
                                 </CardContent>
                               </Card>
                             ) : (

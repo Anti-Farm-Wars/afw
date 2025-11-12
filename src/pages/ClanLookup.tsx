@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { mapCoCRole, getRoleEmoji } from "@/utils/cocRoleMapping";
+import MatchrateTracker from "@/components/MatchrateTracker";
 
 // War weight data based on TH level
 const TH_WAR_WEIGHTS: Record<number, number> = {
@@ -120,6 +121,9 @@ export default function ClanLookup() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Matchrate Tracker - Always visible */}
+          <MatchrateTracker />
 
           {clanData && (
             <div className="space-y-6 animate-fade-in">
@@ -543,11 +547,13 @@ export default function ClanLookup() {
                               </div>
 
                               <div className="flex flex-col items-center justify-center p-3 bg-gradient-to-br from-background/80 to-background/40 rounded-lg">
-                                <p className="text-2xl font-bold mb-1">
-                                  {war.result === 'win' ? '🎉 Win' : war.result === 'lose' ? '😢 Loss' : '🤝 Tie'}
-                                </p>
-                                <p className="text-xs text-muted-foreground">{war.endTime ? new Date(war.endTime).toLocaleDateString() : 'N/A'}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{war.teamSize}v{war.teamSize}</p>
+                                 <p className="text-2xl font-bold mb-1">
+                                   {war.result === 'win' ? '🎉 Win' : war.result === 'lose' ? '😢 Loss' : '🤝 Tie'}
+                                 </p>
+                                 <p className="text-xs text-muted-foreground">
+                                   {war.endTime ? new Date(war.endTime.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})\.000Z/, '$1-$2-$3T$4:$5:$6.000Z')).toLocaleDateString() : 'N/A'}
+                                 </p>
+                                 <p className="text-xs text-muted-foreground mt-1">{war.teamSize}v{war.teamSize}</p>
                               </div>
 
                               <div className="text-center p-3 bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-lg border border-red-500/20">
