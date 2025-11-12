@@ -235,6 +235,116 @@ export default function ClanCWL() {
                 </CardContent>
               </Card>
 
+              {/* Win Probability Analysis */}
+              {cwlData.clans && cwlData.clans.length > 0 && (
+                <Card className="bg-gradient-to-br from-emerald-500/5 via-teal-500/5 to-cyan-500/5 border-2 border-emerald-500/20 shadow-2xl overflow-hidden">
+                  <div className="absolute top-0 right-0 text-9xl opacity-5">🎯</div>
+                  <CardHeader className="relative">
+                    <CardTitle className="flex items-center gap-3 text-xl md:text-2xl">
+                      <span className="animate-pulse text-3xl">🎯</span>
+                      <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent font-bold">
+                        Win Probability Analysis
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="relative">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {cwlData.clans
+                        .map((clan: any) => {
+                          // Calculate win probability based on performance
+                          const allClans = cwlData.clans;
+                          const totalStars = allClans.reduce((sum: number, c: any) => sum + (c.stars || 0), 0);
+                          const totalDest = allClans.reduce((sum: number, c: any) => sum + (c.destructionPercentage || 0), 0);
+                          
+                          // Weighted score: 70% stars, 30% destruction
+                          const clanScore = ((clan.stars || 0) / Math.max(totalStars, 1)) * 0.7 + 
+                                          ((clan.destructionPercentage || 0) / Math.max(totalDest, 1)) * 0.3;
+                          const winProbability = (clanScore * 100).toFixed(1);
+                          
+                          return { ...clan, winProbability: parseFloat(winProbability) };
+                        })
+                        .sort((a: any, b: any) => b.winProbability - a.winProbability)
+                        .map((clan: any, index: number) => (
+                          <Card 
+                            key={clan.tag}
+                            className={`bg-gradient-to-br ${
+                              index === 0 
+                                ? 'from-amber-500/10 to-yellow-500/10 border-2 border-amber-500/30'
+                                : 'from-background/80 to-background/40 border-border/50'
+                            } hover-scale cursor-pointer transition-all`}
+                            onClick={() => {
+                              setClanTag(clan.tag);
+                              searchCWL();
+                            }}
+                          >
+                            <CardContent className="pt-6">
+                              <div className="flex items-center gap-3 mb-4">
+                                {clan.badgeUrls?.small && (
+                                  <img 
+                                    src={clan.badgeUrls.small} 
+                                    alt="" 
+                                    className="h-12 w-12 rounded-lg"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <p className="font-bold text-sm truncate">{clan.name}</p>
+                                  <p className="text-xs text-muted-foreground font-mono">{clan.tag}</p>
+                                </div>
+                                {index === 0 && (
+                                  <div className="text-2xl animate-bounce">🏆</div>
+                                )}
+                              </div>
+                              
+                              <div className="space-y-3">
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Win Chance</p>
+                                  <p className={`text-3xl font-bold ${
+                                    clan.winProbability > 15 
+                                      ? 'text-emerald-500'
+                                      : clan.winProbability > 10
+                                      ? 'text-yellow-500'
+                                      : 'text-muted-foreground'
+                                  }`}>
+                                    {clan.winProbability}%
+                                  </p>
+                                  <div className="w-full bg-muted/30 rounded-full h-2 mt-2">
+                                    <div 
+                                      className={`h-full rounded-full transition-all ${
+                                        clan.winProbability > 15
+                                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                                          : clan.winProbability > 10
+                                          ? 'bg-gradient-to-r from-yellow-500 to-amber-500'
+                                          : 'bg-gradient-to-r from-gray-500 to-gray-600'
+                                      }`}
+                                      style={{ width: `${Math.min(clan.winProbability * 5, 100)}%` }}
+                                    />
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border/30">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-1">Stars</p>
+                                    <div className="flex items-center gap-1">
+                                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                      <p className="text-lg font-bold text-yellow-500">{clan.stars || 0}</p>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground mb-1">Destruction</p>
+                                    <p className="text-lg font-bold text-orange-500">
+                                      {clan.destructionPercentage?.toFixed(1) || 0}%
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Group Standings */}
               {cwlData.clans && cwlData.clans.length > 0 && (
                 <Card className="bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-rose-500/5 border-2 border-purple-500/20 shadow-2xl overflow-hidden">

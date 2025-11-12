@@ -463,19 +463,9 @@ export default function PlayerLookup() {
                     </CardHeader>
                     <CardContent>
                       {(() => {
-                        const pets = playerData.pets || playerData.heroePets || (playerData.troops?.filter((t: any) => {
-                          const isPet = t.name.toLowerCase().includes('pet') || 
-                                       t.name.toLowerCase().includes('unicorn') ||
-                                       t.name.toLowerCase().includes('yak') ||
-                                       t.name.toLowerCase().includes('phoenix') ||
-                                       t.name.toLowerCase().includes('owl') ||
-                                       t.name.toLowerCase().includes('diggy') ||
-                                       t.name.toLowerCase().includes('frosty') ||
-                                       t.name.toLowerCase().includes('electro owl') ||
-                                       t.name.toLowerCase().includes('mighty yak') ||
-                                       t.name.toLowerCase().includes('l.a.s.s.i');
-                          return isPet;
-                        })) || [];
+                        // CoC API uses 'heroePets' field for pets data
+                        const pets = playerData.heroePets || playerData.pets || [];
+                        
                         return pets.length > 0 ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {pets.map((pet: any) => (
