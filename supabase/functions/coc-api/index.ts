@@ -97,12 +97,49 @@ Deno.serve(async (req) => {
       );
     }
 
-    const cocResponse = await fetch(cocUrl, {
-      headers: {
-        'Authorization': `Bearer ${cocToken}`,
-        'Accept': 'application/json',
-      },
-    });
+    // Helper function to make API call with retry on 403
+    const makeCoCARequest = async (url: string, token: string, retries = 1): Promise<Response> => {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+      
+      // If we get 403 and have retries left, try to regenerate key and retry
+      if (response.status === 403 && retries > 0 && cocEmail && cocPassword) {
+        console.log('⚠️ Got 403, attempting to regenerate key and retry...');
+        try {
+          const ipResponse = await fetch('https://api.ipify.org?format=json');
+          const ipData = await ipResponse.json();
+          
+          const keyGenResponse = await fetch('https://get-sc-key.vercel.app', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              game: 'clashofclans',
+              email: cocEmail,
+              password: cocPassword,
+              fixedIp: ipData.ip,
+            }),
+          });
+
+          if (keyGenResponse.ok) {
+            const keyData = await keyGenResponse.json();
+            if (keyData.key) {
+              console.log('✅ Regenerated key, retrying request...');
+              return makeCoCARequest(url, keyData.key, retries - 1);
+            }
+          }
+        } catch (error) {
+          console.log('Failed to regenerate key:', error);
+        }
+      }
+      
+      return response;
+    };
+
+    const cocResponse = await makeCoCARequest(cocUrl, cocToken);
 
     if (!cocResponse.ok) {
       const errorText = await cocResponse.text();
@@ -129,12 +166,7 @@ Deno.serve(async (req) => {
     if (isCWL && type === 'clan') {
       try {
         const cwlUrl = `https://api.clashofclans.com/v1/clans/${encodedTag}/currentwar/leaguegroup`;
-        const cwlResponse = await fetch(cwlUrl, {
-          headers: {
-            'Authorization': `Bearer ${cocToken}`,
-            'Accept': 'application/json',
-          },
-        });
+        const cwlResponse = await makeCoCARequest(cwlUrl, cocToken);
 
         if (cwlResponse.ok) {
           const cwlData = await cwlResponse.json();
@@ -153,12 +185,7 @@ Deno.serve(async (req) => {
                   const warUrl = `https://api.clashofclans.com/v1/clanwarleagues/wars/${encodedWarTag}`;
                   
                   console.log(`Fetching war: ${warTag}`);
-                  const warResponse = await fetch(warUrl, {
-                    headers: {
-                      'Authorization': `Bearer ${cocToken}`,
-                      'Accept': 'application/json',
-                    },
-                  });
+                  const warResponse = await makeCoCARequest(warUrl, cocToken);
                   
                   if (warResponse.ok) {
                     const warData = await warResponse.json();
@@ -279,12 +306,7 @@ Deno.serve(async (req) => {
       try {
         console.log('Fetching current war data...');
         const currentWarUrl = `https://api.clashofclans.com/v1/clans/${encodedTag}/currentwar`;
-        const currentWarResponse = await fetch(currentWarUrl, {
-          headers: {
-            'Authorization': `Bearer ${cocToken}`,
-            'Accept': 'application/json',
-          },
-        });
+        const currentWarResponse = await makeCoCARequest(currentWarUrl, cocToken);
         console.log('Current war response status:', currentWarResponse.status);
         if (currentWarResponse.ok) {
           currentWar = await currentWarResponse.json();
@@ -301,12 +323,7 @@ Deno.serve(async (req) => {
       try {
         console.log('Fetching war log data...');
         const warLogUrl = `https://api.clashofclans.com/v1/clans/${encodedTag}/warlog`;
-        const warLogResponse = await fetch(warLogUrl, {
-          headers: {
-            'Authorization': `Bearer ${cocToken}`,
-            'Accept': 'application/json',
-          },
-        });
+        const warLogResponse = await makeCoCARequest(warLogUrl, cocToken);
         console.log('War log response status:', warLogResponse.status);
         if (warLogResponse.ok) {
           warLog = await warLogResponse.json();
