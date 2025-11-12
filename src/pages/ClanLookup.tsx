@@ -8,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { mapCoCRole, getRoleEmoji } from "@/utils/cocRoleMapping";
-import MatchrateTracker from "@/components/MatchrateTracker";
 
 // War weight data based on TH level
 const TH_WAR_WEIGHTS: Record<number, number> = {
@@ -121,9 +120,6 @@ export default function ClanLookup() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Matchrate Tracker - Always visible */}
-          <MatchrateTracker />
 
           {clanData && (
             <div className="space-y-6 animate-fade-in">
