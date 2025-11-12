@@ -26,18 +26,58 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use the configured CoC API token
-    const cocToken = Deno.env.get('COC_API_TOKEN');
+    // Try to get CoC API token - first try static, then generate dynamic
+    let cocToken = Deno.env.get('COC_API_TOKEN');
+    
+    // If we have credentials, try to generate a dynamic key for the current IP
+    const cocEmail = Deno.env.get('COC_EMAIL');
+    const cocPassword = Deno.env.get('COC_PASSWORD');
+    
+    if (cocEmail && cocPassword) {
+      try {
+        // Get the current IP of this edge function
+        console.log('Detecting current IP...');
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        const currentIp = ipData.ip;
+        console.log('Current IP:', currentIp);
+
+        // Try to generate a fresh API key for the current IP
+        console.log('Attempting to generate fresh API key for current IP...');
+        const keyGenResponse = await fetch('https://get-sc-key.vercel.app', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            game: 'clashofclans',
+            email: cocEmail,
+            password: cocPassword,
+            fixedIp: currentIp,
+          }),
+        });
+
+        if (keyGenResponse.ok) {
+          const keyData = await keyGenResponse.json();
+          if (keyData.key) {
+            cocToken = keyData.key;
+            console.log('✅ Successfully generated dynamic API key for IP:', currentIp);
+          }
+        } else {
+          console.log('⚠️ Key generation service unavailable, using static token');
+        }
+      } catch (error) {
+        console.log('⚠️ Dynamic key generation failed, falling back to static token:', error);
+      }
+    }
     
     if (!cocToken) {
-      console.error('COC_API_TOKEN not configured');
+      console.error('No CoC API token available');
       return new Response(
         JSON.stringify({ error: 'API token not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Using configured CoC API token');
+    console.log('Using CoC API token for request');
 
     // Clean the tag - remove # if present and encode it properly
     const cleanTag = tag.replace(/^#/, '');
