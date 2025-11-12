@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 export default function ClanCWL() {
   const [clanTag, setClanTag] = useState("");
@@ -130,7 +131,7 @@ export default function ClanCWL() {
             </CardContent>
           </Card>
 
-          {/* Basic Clan Info */}
+          {/* Enhanced Clan Info */}
           {clanBasicData && (
             <Card className="mb-8 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 border-2 border-blue-500/20 shadow-2xl overflow-hidden animate-fade-in">
               <CardHeader>
@@ -139,17 +140,25 @@ export default function ClanCWL() {
                     <img 
                       src={clanBasicData.badgeUrls.medium} 
                       alt="" 
-                      className="h-12 w-12 rounded-lg"
+                      className="h-16 w-16 rounded-lg hover-scale"
                     />
                   )}
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xl md:text-2xl font-bold">{clanBasicData.name}</span>
+                      <span className="text-2xl md:text-3xl font-bold">{clanBasicData.name}</span>
                       <span className="text-sm text-muted-foreground font-mono">{clanBasicData.tag}</span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Level {clanBasicData.clanLevel} • {clanBasicData.members} Members • {clanBasicData.warLeague?.name || 'Unranked'}
-                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        Level {clanBasicData.clanLevel}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {clanBasicData.members} Members
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {clanBasicData.warLeague?.name || 'Unranked'}
+                      </Badge>
+                    </div>
                   </div>
                   <Link to="/clan-lookup">
                     <Button variant="outline" size="sm" className="gap-2">
@@ -159,6 +168,30 @@ export default function ClanCWL() {
                   </Link>
                 </CardTitle>
               </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-gradient-to-br from-yellow-500/10 to-amber-500/10 rounded-lg border border-yellow-500/20 text-center hover-scale">
+                    <Trophy className="h-6 w-6 mx-auto mb-2 text-yellow-500" />
+                    <p className="text-xs text-muted-foreground mb-1">Trophies</p>
+                    <p className="text-xl font-bold">{clanBasicData.clanPoints?.toLocaleString()}</p>
+                  </div>
+                  <div className="p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20 text-center hover-scale">
+                    <Swords className="h-6 w-6 mx-auto mb-2 text-green-500" />
+                    <p className="text-xs text-muted-foreground mb-1">War Wins</p>
+                    <p className="text-xl font-bold">{clanBasicData.warWins || 0}</p>
+                  </div>
+                  <div className="p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20 text-center hover-scale">
+                    <Flame className="h-6 w-6 mx-auto mb-2 text-blue-500" />
+                    <p className="text-xs text-muted-foreground mb-1">Win Streak</p>
+                    <p className="text-xl font-bold">{clanBasicData.warWinStreak || 0}</p>
+                  </div>
+                  <div className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20 text-center hover-scale">
+                    <Shield className="h-6 w-6 mx-auto mb-2 text-purple-500" />
+                    <p className="text-xs text-muted-foreground mb-1">Required</p>
+                    <p className="text-xl font-bold">{clanBasicData.requiredTrophies?.toLocaleString() || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           )}
 
@@ -441,7 +474,7 @@ export default function ClanCWL() {
                                    {/* War Result & Win Probability */}
                                    <div className="space-y-3">
                                      <div className="text-center p-4 bg-gradient-to-r from-background/80 to-background/40 rounded-lg">
-                                       <p className="text-sm text-muted-foreground mb-1">Result</p>
+                                       <p className="text-sm text-muted-foreground mb-1">War State</p>
                                        <p className="text-xl md:text-2xl font-bold capitalize">
                                          {searchedClanWar.state === 'warEnded' 
                                            ? (participants.searchedClan.stars > participants.opponent.stars 
@@ -449,17 +482,28 @@ export default function ClanCWL() {
                                                : participants.searchedClan.stars < participants.opponent.stars 
                                                ? '😢 Defeat' 
                                                : '🤝 Draw')
-                                         : searchedClanWar.state}
+                                         : searchedClanWar.state === 'inWar' 
+                                           ? '⚔️ In War'
+                                           : '🕐 Preparation'}
                                      </p>
                                    </div>
                                    
-                                   {/* Win Probability */}
+                                   {/* Win Probability based on current performance */}
                                    <div className="text-center p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
-                                     <p className="text-sm text-muted-foreground mb-2">Win Probability</p>
+                                     <p className="text-sm text-muted-foreground mb-2">Current Win Probability</p>
                                      {(() => {
-                                       const totalStars = participants.searchedClan.stars + participants.opponent.stars;
-                                       const winProb = totalStars > 0 
-                                         ? ((participants.searchedClan.stars / totalStars) * 100).toFixed(1) 
+                                       const clanStars = participants.searchedClan.stars || 0;
+                                       const oppStars = participants.opponent.stars || 0;
+                                       const clanDest = participants.searchedClan.destructionPercentage || 0;
+                                       const oppDest = participants.opponent.destructionPercentage || 0;
+                                       
+                                       // Weight: 70% stars, 30% destruction
+                                       const clanScore = (clanStars * 0.7) + (clanDest * 0.003);
+                                       const oppScore = (oppStars * 0.7) + (oppDest * 0.003);
+                                       const totalScore = clanScore + oppScore;
+                                       
+                                       const winProb = totalScore > 0 
+                                         ? ((clanScore / totalScore) * 100).toFixed(1) 
                                          : '50.0';
                                        return (
                                          <div className="space-y-2">
@@ -472,11 +516,171 @@ export default function ClanCWL() {
                                                style={{ width: `${winProb}%` }}
                                              />
                                            </div>
+                                           <p className="text-xs text-muted-foreground mt-2">
+                                             Based on stars (70%) & destruction (30%)
+                                           </p>
                                          </div>
                                        );
                                      })()}
                                    </div>
                                  </div>
+
+                                 {/* Attack Details */}
+                                 {searchedClanWar.clan?.members && searchedClanWar.opponent?.members && (
+                                   <div className="mt-6">
+                                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                       <Swords className="h-5 w-5" />
+                                       Attack Details (Day {roundIndex + 1})
+                                     </h3>
+                                     
+                                     <Tabs defaultValue="your-clan" className="w-full">
+                                       <TabsList className="grid w-full grid-cols-2">
+                                         <TabsTrigger value="your-clan">
+                                           {participants.searchedClan.name}
+                                         </TabsTrigger>
+                                         <TabsTrigger value="opponent">
+                                           {participants.opponent.name}
+                                         </TabsTrigger>
+                                       </TabsList>
+
+                                       {/* Your Clan Attacks */}
+                                       <TabsContent value="your-clan" className="space-y-3 mt-4">
+                                         {participants.searchedClan.members
+                                           ?.filter((m: any) => m.attacks && m.attacks.length > 0)
+                                           .sort((a: any, b: any) => a.mapPosition - b.mapPosition)
+                                           .map((member: any) => (
+                                             <Card key={member.tag} className="bg-gradient-to-br from-green-500/5 to-emerald-500/5 border border-green-500/20">
+                                               <CardContent className="pt-4">
+                                                 <div className="flex items-center justify-between mb-3">
+                                                   <div>
+                                                     <p className="font-bold text-sm">{member.name}</p>
+                                                     <p className="text-xs text-muted-foreground">#{member.mapPosition} • TH{member.townhallLevel}</p>
+                                                   </div>
+                                                   <div className="text-right">
+                                                     <p className="text-xs text-muted-foreground">
+                                                       {member.attacks?.length || 0} attack{member.attacks?.length !== 1 ? 's' : ''}
+                                                     </p>
+                                                   </div>
+                                                 </div>
+                                                 <div className="space-y-2">
+                                                   {member.attacks?.map((attack: any, idx: number) => {
+                                                     const defender = participants.opponent.members?.find(
+                                                       (m: any) => m.tag === attack.defenderTag
+                                                     );
+                                                     return (
+                                                       <div key={idx} className="p-3 bg-background/50 rounded-lg border border-border/30">
+                                                         <div className="flex items-center justify-between">
+                                                           <div className="flex items-center gap-2">
+                                                             <Target className="h-4 w-4 text-red-500" />
+                                                             <div>
+                                                               <p className="text-xs font-semibold">vs {defender?.name || 'Unknown'}</p>
+                                                               <p className="text-xs text-muted-foreground">
+                                                                 Position #{attack.defenderMapPosition} • TH{defender?.townhallLevel || '?'}
+                                                               </p>
+                                                             </div>
+                                                           </div>
+                                                           <div className="text-right">
+                                                             <div className="flex items-center gap-2">
+                                                               <div className="flex items-center gap-1">
+                                                                 {[...Array(3)].map((_, i) => (
+                                                                   <Star 
+                                                                     key={i}
+                                                                     className={`h-4 w-4 ${
+                                                                       i < attack.stars 
+                                                                         ? 'fill-yellow-500 text-yellow-500' 
+                                                                         : 'text-muted-foreground'
+                                                                     }`}
+                                                                   />
+                                                                 ))}
+                                                               </div>
+                                                               <Badge variant={attack.stars === 3 ? 'default' : attack.stars >= 2 ? 'secondary' : 'outline'}>
+                                                                 {attack.destructionPercentage?.toFixed(0)}%
+                                                               </Badge>
+                                                             </div>
+                                                           </div>
+                                                         </div>
+                                                       </div>
+                                                     );
+                                                   })}
+                                                 </div>
+                                               </CardContent>
+                                             </Card>
+                                           ))}
+                                         {(!participants.searchedClan.members?.some((m: any) => m.attacks?.length > 0)) && (
+                                           <p className="text-center text-muted-foreground py-8">No attacks recorded yet</p>
+                                         )}
+                                       </TabsContent>
+
+                                       {/* Opponent Attacks */}
+                                       <TabsContent value="opponent" className="space-y-3 mt-4">
+                                         {participants.opponent.members
+                                           ?.filter((m: any) => m.attacks && m.attacks.length > 0)
+                                           .sort((a: any, b: any) => a.mapPosition - b.mapPosition)
+                                           .map((member: any) => (
+                                             <Card key={member.tag} className="bg-gradient-to-br from-red-500/5 to-orange-500/5 border border-red-500/20">
+                                               <CardContent className="pt-4">
+                                                 <div className="flex items-center justify-between mb-3">
+                                                   <div>
+                                                     <p className="font-bold text-sm">{member.name}</p>
+                                                     <p className="text-xs text-muted-foreground">#{member.mapPosition} • TH{member.townhallLevel}</p>
+                                                   </div>
+                                                   <div className="text-right">
+                                                     <p className="text-xs text-muted-foreground">
+                                                       {member.attacks?.length || 0} attack{member.attacks?.length !== 1 ? 's' : ''}
+                                                     </p>
+                                                   </div>
+                                                 </div>
+                                                 <div className="space-y-2">
+                                                   {member.attacks?.map((attack: any, idx: number) => {
+                                                     const defender = participants.searchedClan.members?.find(
+                                                       (m: any) => m.tag === attack.defenderTag
+                                                     );
+                                                     return (
+                                                       <div key={idx} className="p-3 bg-background/50 rounded-lg border border-border/30">
+                                                         <div className="flex items-center justify-between">
+                                                           <div className="flex items-center gap-2">
+                                                             <Target className="h-4 w-4 text-blue-500" />
+                                                             <div>
+                                                               <p className="text-xs font-semibold">vs {defender?.name || 'Unknown'}</p>
+                                                               <p className="text-xs text-muted-foreground">
+                                                                 Position #{attack.defenderMapPosition} • TH{defender?.townhallLevel || '?'}
+                                                               </p>
+                                                             </div>
+                                                           </div>
+                                                           <div className="text-right">
+                                                             <div className="flex items-center gap-2">
+                                                               <div className="flex items-center gap-1">
+                                                                 {[...Array(3)].map((_, i) => (
+                                                                   <Star 
+                                                                     key={i}
+                                                                     className={`h-4 w-4 ${
+                                                                       i < attack.stars 
+                                                                         ? 'fill-yellow-500 text-yellow-500' 
+                                                                         : 'text-muted-foreground'
+                                                                     }`}
+                                                                   />
+                                                                 ))}
+                                                               </div>
+                                                               <Badge variant={attack.stars === 3 ? 'default' : attack.stars >= 2 ? 'secondary' : 'outline'}>
+                                                                 {attack.destructionPercentage?.toFixed(0)}%
+                                                               </Badge>
+                                                             </div>
+                                                           </div>
+                                                         </div>
+                                                       </div>
+                                                     );
+                                                   })}
+                                                 </div>
+                                               </CardContent>
+                                             </Card>
+                                           ))}
+                                         {(!participants.opponent.members?.some((m: any) => m.attacks?.length > 0)) && (
+                                           <p className="text-center text-muted-foreground py-8">No attacks recorded yet</p>
+                                         )}
+                                       </TabsContent>
+                                     </Tabs>
+                                   </div>
+                                 )}
                                 </CardContent>
                               </Card>
                             ) : (
