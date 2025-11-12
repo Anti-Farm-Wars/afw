@@ -26,60 +26,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    const cocEmail = Deno.env.get('COC_EMAIL');
-    const cocPassword = Deno.env.get('COC_PASSWORD');
-    
-    if (!cocEmail || !cocPassword) {
-      console.error('COC_EMAIL or COC_PASSWORD not configured');
-      return new Response(
-        JSON.stringify({ error: 'API credentials not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get the current IP of this edge function
-    console.log('Detecting current IP...');
-    const ipResponse = await fetch('https://api.ipify.org?format=json');
-    const ipData = await ipResponse.json();
-    const currentIp = ipData.ip;
-    console.log('Current IP:', currentIp);
-
-    // Get a fresh API key for the current IP using the key generation service
-    console.log('Generating fresh API key for current IP...');
-    const keyGenResponse = await fetch('https://get-sc-key.vercel.app', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        game: 'clashofclans',
-        email: cocEmail,
-        password: cocPassword,
-        fixedIp: currentIp,
-      }),
-    });
-
-    if (!keyGenResponse.ok) {
-      const errorText = await keyGenResponse.text();
-      console.error(`Key generation failed: ${keyGenResponse.status} - ${errorText}`);
-      return new Response(
-        JSON.stringify({ error: 'Failed to generate API key for current IP' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const keyData = await keyGenResponse.json();
-    const cocToken = keyData.key;
+    // Use the configured CoC API token
+    const cocToken = Deno.env.get('COC_API_TOKEN');
     
     if (!cocToken) {
-      console.error('No key received from generation service');
+      console.error('COC_API_TOKEN not configured');
       return new Response(
-        JSON.stringify({ error: 'Failed to obtain API key' }),
+        JSON.stringify({ error: 'API token not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Successfully generated API key for IP:', keyData.ipRange);
+    console.log('Using configured CoC API token');
 
     // Clean the tag - remove # if present and encode it properly
     const cleanTag = tag.replace(/^#/, '');
