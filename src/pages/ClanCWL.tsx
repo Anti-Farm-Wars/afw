@@ -363,23 +363,33 @@ export default function ClanCWL() {
 
                       {cwlData.rounds?.map((round: any, roundIndex: number) => {
                         // Find the war involving the searched clan for this specific round
-                        const searchedClanWar = round.warTags && round.warTags.length > 0 
-                          ? cwlData.warDetails?.find((war: any) => {
-                              const warTag = war.tag?.replace(/^#/, '').toUpperCase();
-                              return round.warTags.some((rt: string) => rt.replace(/^#/, '').toUpperCase() === warTag);
-                            }).then((matchingWar: any) => {
-                              if (!matchingWar) return null;
-                              const clanTag = matchingWar.clan?.tag?.replace(/^#/, '').toUpperCase();
-                              const opponentTag = matchingWar.opponent?.tag?.replace(/^#/, '').toUpperCase();
-                              const searchTag = clanBasicData.tag?.replace(/^#/, '').toUpperCase();
-                              return (clanTag === searchTag || opponentTag === searchTag) ? matchingWar : null;
-                            })
-                          : cwlData.warDetails?.find((war: any) => {
-                              const clanTag = war.clan?.tag?.replace(/^#/, '').toUpperCase();
-                              const opponentTag = war.opponent?.tag?.replace(/^#/, '').toUpperCase();
-                              const searchTag = clanBasicData.tag?.replace(/^#/, '').toUpperCase();
-                              return clanTag === searchTag || opponentTag === searchTag;
-                            });
+                        let searchedClanWar = null;
+                        
+                        if (round.warTags && round.warTags.length > 0) {
+                          // First find any war that matches this round's war tags
+                          const matchingWar = cwlData.warDetails?.find((war: any) => {
+                            const warTag = war.tag?.replace(/^#/, '').toUpperCase();
+                            return round.warTags.some((rt: string) => rt.replace(/^#/, '').toUpperCase() === warTag);
+                          });
+                          
+                          // Then check if the searched clan is in this war
+                          if (matchingWar) {
+                            const clanTag = matchingWar.clan?.tag?.replace(/^#/, '').toUpperCase();
+                            const opponentTag = matchingWar.opponent?.tag?.replace(/^#/, '').toUpperCase();
+                            const searchTag = clanBasicData.tag?.replace(/^#/, '').toUpperCase();
+                            if (clanTag === searchTag || opponentTag === searchTag) {
+                              searchedClanWar = matchingWar;
+                            }
+                          }
+                        } else {
+                          // No war tags in round, fall back to searching all wars
+                          searchedClanWar = cwlData.warDetails?.find((war: any) => {
+                            const clanTag = war.clan?.tag?.replace(/^#/, '').toUpperCase();
+                            const opponentTag = war.opponent?.tag?.replace(/^#/, '').toUpperCase();
+                            const searchTag = clanBasicData.tag?.replace(/^#/, '').toUpperCase();
+                            return clanTag === searchTag || opponentTag === searchTag;
+                          });
+                        }
 
                         const participants = searchedClanWar ? getWarParticipants(searchedClanWar, clanBasicData.tag) : null;
 
