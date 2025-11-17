@@ -38,6 +38,9 @@ export default function StaffDashboard() {
   const [verifyingPlayer, setVerifyingPlayer] = useState(false);
   const [playerAssociationType, setPlayerAssociationType] = useState("");
   const [playerDescription, setPlayerDescription] = useState("");
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [selectedUserRole, setSelectedUserRole] = useState<string>("");
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -70,7 +73,43 @@ export default function StaffDashboard() {
     loadAssociations();
     loadPlayerAssociations();
     loadAssociationTypes();
+    if (roleData?.role === 'admin' || roleData?.role === 'primary_admin') {
+      loadAllUsers();
+    }
     setLoading(false);
+  };
+
+  const loadAllUsers = async () => {
+    try {
+      // Get all profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (profilesError) throw profilesError;
+
+      // Get all user roles
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("*");
+
+      if (rolesError) throw rolesError;
+
+      // Merge profiles with roles
+      const usersWithRoles = profiles?.map(profile => {
+        const userRoles = roles?.filter(r => r.user_id === profile.id) || [];
+        return {
+          ...profile,
+          roles: userRoles.map(r => r.role),
+          roleIds: userRoles.map(r => r.id)
+        };
+      }) || [];
+
+      setAllUsers(usersWithRoles);
+    } catch (error: any) {
+      console.error("Error loading users:", error);
+    }
   };
 
   const handleSignOut = async () => {
@@ -283,7 +322,116 @@ export default function StaffDashboard() {
         });
         setNewStaffEmail("");
         setNewStaffPassword("");
+        loadAllUsers();
       }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      // Delete user roles first
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", userId);
+
+      if (roleError) throw roleError;
+
+      // Note: We can't delete from auth.users directly, but we can remove their roles
+      // The profile will remain but they won't have access
+      toast({
+        title: "Success",
+        description: "User roles removed successfully",
+      });
+      loadAllUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleChangeUserRole = async (userId: string, newRole: string) => {
+    if (userRole !== 'primary_admin' && newRole === 'primary_admin') {
+      toast({
+        title: "Error",
+        description: "Only primary admin can create other primary admins",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Get existing roles for this user
+      const { data: existingRoles } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("user_id", userId);
+
+      // Check if user already has this role
+      const hasRole = existingRoles?.some(r => r.role === newRole);
+      
+      if (hasRole) {
+        toast({
+          title: "Info",
+          description: "User already has this role",
+        });
+        return;
+      }
+
+      // Add new role
+      const { error } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: userId,
+          role: newRole as "admin" | "primary_admin" | "staff",
+          created_by: user.id,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User role updated successfully",
+      });
+      setEditingUserId(null);
+      setSelectedUserRole("");
+      loadAllUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveRole = async (userId: string, roleId: string) => {
+    try {
+      const { error } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("id", roleId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Role removed successfully",
+      });
+      loadAllUsers();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -974,46 +1122,152 @@ export default function StaffDashboard() {
 
             {(userRole === 'admin' || userRole === 'primary_admin') && (
               <TabsContent value="staff">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Create Staff Account</CardTitle>
-                    <CardDescription>Add new staff members who can manage associations</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleCreateStaff} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="staff-email">Email</Label>
-                        <Input
-                          id="staff-email"
-                          type="email"
-                          placeholder="newstaff@example.com"
-                          value={newStaffEmail}
-                          onChange={(e) => setNewStaffEmail(e.target.value)}
-                          required
-                          className="bg-background/50"
-                        />
-                      </div>
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Create Staff Account</CardTitle>
+                      <CardDescription>Add new staff members who can manage associations</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleCreateStaff} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="staff-email">Email</Label>
+                          <Input
+                            id="staff-email"
+                            type="email"
+                            placeholder="newstaff@example.com"
+                            value={newStaffEmail}
+                            onChange={(e) => setNewStaffEmail(e.target.value)}
+                            required
+                            className="bg-background/50"
+                          />
+                        </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="staff-password">Password</Label>
-                        <Input
-                          id="staff-password"
-                          type="password"
-                          value={newStaffPassword}
-                          onChange={(e) => setNewStaffPassword(e.target.value)}
-                          required
-                          minLength={6}
-                          className="bg-background/50"
-                        />
-                      </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="staff-password">Password</Label>
+                          <Input
+                            id="staff-password"
+                            type="password"
+                            value={newStaffPassword}
+                            onChange={(e) => setNewStaffPassword(e.target.value)}
+                            required
+                            minLength={6}
+                            className="bg-background/50"
+                          />
+                        </div>
 
-                      <Button type="submit" className="w-full">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Create Staff Account
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
+                        <Button type="submit" className="w-full">
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Create Staff Account
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Manage Users</CardTitle>
+                      <CardDescription>View and manage all users and their roles</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {allUsers.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-8">No users found</p>
+                      ) : (
+                        <div className="space-y-4">
+                          {allUsers.map((userItem) => (
+                            <div key={userItem.id} className="p-4 border rounded-lg bg-card/50">
+                              <div className="flex items-start justify-between mb-3">
+                                <div>
+                                  <p className="font-semibold">{userItem.username}</p>
+                                  <p className="text-sm text-muted-foreground">{userItem.id}</p>
+                                </div>
+                                {userItem.id !== user.id && (
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm" 
+                                    onClick={() => handleDeleteUser(userItem.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium">Roles:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {userItem.roles && userItem.roles.length > 0 ? (
+                                    userItem.roles.map((role: string, idx: number) => (
+                                      <div key={idx} className="flex items-center gap-2 bg-primary/10 px-3 py-1 rounded-full">
+                                        <span className="text-sm">{role}</span>
+                                        {userItem.id !== user.id && (
+                                          <button
+                                            onClick={() => handleRemoveRole(userItem.id, userItem.roleIds[idx])}
+                                            className="text-destructive hover:text-destructive/80"
+                                          >
+                                            ×
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground">No roles assigned</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {userItem.id !== user.id && (
+                                <div className="mt-4 pt-4 border-t">
+                                  {editingUserId === userItem.id ? (
+                                    <div className="flex gap-2">
+                                      <Select value={selectedUserRole} onValueChange={setSelectedUserRole}>
+                                        <SelectTrigger className="flex-1">
+                                          <SelectValue placeholder="Select role to add" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="staff">Staff</SelectItem>
+                                          <SelectItem value="admin">Admin</SelectItem>
+                                          {userRole === 'primary_admin' && (
+                                            <SelectItem value="primary_admin">Primary Admin</SelectItem>
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => handleChangeUserRole(userItem.id, selectedUserRole)}
+                                        disabled={!selectedUserRole}
+                                      >
+                                        Add
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline" 
+                                        onClick={() => {
+                                          setEditingUserId(null);
+                                          setSelectedUserRole("");
+                                        }}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      onClick={() => setEditingUserId(userItem.id)}
+                                    >
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      Add Role
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
             )}
           </Tabs>
