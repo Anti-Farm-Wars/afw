@@ -13,6 +13,7 @@ import ManageAssociations from "./pages/ManageAssociations";
 import StaffAuth from "./pages/StaffAuth";
 import StaffDashboard from "./pages/StaffDashboard";
 import ApiDocumentation from "./pages/ApiDocumentation";
+import WarWeightReference from "./pages/WarWeightReference";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => {
             <Route path="/clan-cwl" element={<ClanCWL />} />
             <Route path="/player-lookup" element={<PlayerLookup />} />
             <Route path="/manage-associations" element={<ManageAssociations />} />
+            <Route path="/war-weight" element={<WarWeightReference />} />
             <Route path="/staff" element={<StaffAuth />} />
             <Route path="/staff/dashboard" element={<StaffDashboard />} />
             <Route path="/staff/api-docs" element={<ApiDocumentation />} />

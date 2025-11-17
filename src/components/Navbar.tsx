@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, LogIn, Trophy } from "lucide-react";
+import { Shield, Users, LogIn, Trophy, Scale } from "lucide-react";
 import logo from "@/assets/afw-logo.png";
 
 export const Navbar = () => {
@@ -45,6 +45,16 @@ export const Navbar = () => {
               >
                 <Users className="h-4 w-4" />
                 Player Lookup
+              </Button>
+            </Link>
+            
+            <Link to="/war-weight">
+              <Button 
+                variant={isActive("/war-weight") ? "default" : "ghost"}
+                className="gap-2"
+              >
+                <Scale className="h-4 w-4" />
+                War Weight
               </Button>
             </Link>
             
