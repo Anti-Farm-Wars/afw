@@ -388,7 +388,7 @@ export default function PlayerLookup() {
                                   'Phoenix',
                                   'Spirit Fox',
                                   'Angry Jelly',
-                                  'Sneaky',
+                                  'Sneezy',
                                 ];
                                 const isPet = petNames.some(pet => troop.name.toLowerCase() === pet.toLowerCase());
                                 return !isPet && troop.village !== 'builderBase';
@@ -438,7 +438,7 @@ export default function PlayerLookup() {
                             'Phoenix',
                             'Spirit Fox',
                             'Angry Jelly',
-                            'Sneaky',
+                            'Sneezy',
                           ];
                           
                           const pets = (playerData.troops || []).filter((troop: any) => {
