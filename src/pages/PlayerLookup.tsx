@@ -426,7 +426,24 @@ export default function PlayerLookup() {
                       </CardHeader>
                       <CardContent>
                         {(() => {
-                          const pets = playerData.heroePets || playerData.pets || [];
+                          // Extract pets from troops array
+                          const petNames = [
+                            'L.A.S.S.I',
+                            'Electro Owl',
+                            'Mighty Yak',
+                            'Unicorn',
+                            'Frosty',
+                            'Diggy',
+                            'Poison Lizard',
+                            'Phoenix',
+                            'Spirit Fox',
+                            'Angry Jelly',
+                            'Sneaky',
+                          ];
+                          
+                          const pets = (playerData.troops || []).filter((troop: any) => {
+                            return petNames.some(pet => troop.name.toLowerCase() === pet.toLowerCase());
+                          });
                           
                           return pets.length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
