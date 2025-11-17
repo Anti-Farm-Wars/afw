@@ -11,6 +11,7 @@ import { mapCoCRole, getRoleEmoji } from "@/utils/cocRoleMapping";
 
 // War weight data based on TH level
 const TH_WAR_WEIGHTS: Record<number, number> = {
+  18: 195000,
   17: 168000,
   16: 158000,
   15: 148000,
@@ -24,6 +25,10 @@ const TH_WAR_WEIGHTS: Record<number, number> = {
   7: 68000,
   6: 58000,
   5: 48000,
+  4: 5000,
+  3: 3500,
+  2: 2000,
+  1: 1200,
 };
 
 export default function ClanLookup() {
