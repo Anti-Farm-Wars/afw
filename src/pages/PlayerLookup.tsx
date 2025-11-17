@@ -292,11 +292,10 @@ export default function PlayerLookup() {
 
               {/* Tabbed Content */}
               <Tabs defaultValue="heroes" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="heroes">👑 Heroes</TabsTrigger>
-                  <TabsTrigger value="troops">⚔️ Troops</TabsTrigger>
+                  <TabsTrigger value="troops-pets">⚔️ Troops & Pets</TabsTrigger>
                   <TabsTrigger value="spells">✨ Spells</TabsTrigger>
-                  <TabsTrigger value="pets">🐾 Pets</TabsTrigger>
                   <TabsTrigger value="achievements">🏅 Achievements</TabsTrigger>
                 </TabsList>
 
@@ -360,58 +359,105 @@ export default function PlayerLookup() {
                   </Card>
                 </TabsContent>
 
-                {/* Troops Tab */}
-                <TabsContent value="troops">
-                  <Card className="bg-gradient-to-br from-red-500/5 via-orange-500/5 to-amber-500/5 border-2 border-red-500/20">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3">
-                        <span className="text-2xl animate-pulse">⚔️</span>
-                        <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
-                          Troops
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {playerData.troops && playerData.troops.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                          {playerData.troops
-                            .filter((troop: any) => {
-                              const petNames = [
-                                'L.A.S.S.I',
-                                'Electro Owl',
-                                'Mighty Yak',
-                                'Unicorn',
-                                'Frosty',
-                                'Diggy',
-                                'Poison Lizard',
-                                'Phoenix',
-                                'Spirit Fox',
-                                'Angry Jelly',
-                                'Sneaky',
-                              ];
-                              const isPet = petNames.some(pet => troop.name.toLowerCase() === pet.toLowerCase());
-                              return !isPet && troop.village !== 'builderBase';
-                            })
-                            .map((troop: any) => (
-                            <Card key={troop.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
-                              <CardContent className="pt-4 text-center">
-                                <div className="text-2xl mb-2">{getTroopIcon(troop.name)}</div>
-                                <p className="text-xs font-semibold mb-2 truncate">{troop.name}</p>
-                                <p className="text-sm text-muted-foreground mb-1">{troop.village}</p>
-                                <div className="flex items-center justify-center gap-2">
-                                  <Badge variant="outline">Lv {troop.level}</Badge>
-                                  <span className="text-xs text-muted-foreground">/{troop.maxLevel}</span>
-                                </div>
-                                <Progress value={(troop.level / troop.maxLevel) * 100} className="h-1 mt-2" />
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-center text-muted-foreground py-8">No troops data available</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                {/* Troops & Pets Tab */}
+                <TabsContent value="troops-pets">
+                  <div className="space-y-6">
+                    {/* Troops Section */}
+                    <Card className="bg-gradient-to-br from-red-500/5 via-orange-500/5 to-amber-500/5 border-2 border-red-500/20">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-3">
+                          <span className="text-2xl animate-pulse">⚔️</span>
+                          <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+                            Troops
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {playerData.troops && playerData.troops.length > 0 ? (
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {playerData.troops
+                              .filter((troop: any) => {
+                                const petNames = [
+                                  'L.A.S.S.I',
+                                  'Electro Owl',
+                                  'Mighty Yak',
+                                  'Unicorn',
+                                  'Frosty',
+                                  'Diggy',
+                                  'Poison Lizard',
+                                  'Phoenix',
+                                  'Spirit Fox',
+                                  'Angry Jelly',
+                                  'Sneaky',
+                                ];
+                                const isPet = petNames.some(pet => troop.name.toLowerCase() === pet.toLowerCase());
+                                return !isPet && troop.village !== 'builderBase';
+                              })
+                              .map((troop: any) => (
+                              <Card key={troop.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
+                                <CardContent className="pt-4 text-center">
+                                  <div className="text-2xl mb-2">{getTroopIcon(troop.name)}</div>
+                                  <p className="text-xs font-semibold mb-2 truncate">{troop.name}</p>
+                                  <p className="text-sm text-muted-foreground mb-1">{troop.village}</p>
+                                  <div className="flex items-center justify-center gap-2">
+                                    <Badge variant="outline">Lv {troop.level}</Badge>
+                                    <span className="text-xs text-muted-foreground">/{troop.maxLevel}</span>
+                                  </div>
+                                  <Progress value={(troop.level / troop.maxLevel) * 100} className="h-1 mt-2" />
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-center text-muted-foreground py-8">No troops data available</p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Pets Section */}
+                    <Card className="bg-gradient-to-br from-green-500/5 via-emerald-500/5 to-teal-500/5 border-2 border-green-500/20">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-3">
+                          <span className="text-2xl animate-bounce">🐾</span>
+                          <span className="bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                            Hero Pets
+                          </span>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {(() => {
+                          const pets = playerData.heroePets || playerData.pets || [];
+                          
+                          return pets.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {pets.map((pet: any) => (
+                                <Card key={pet.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
+                                  <CardContent className="pt-6">
+                                    <div className="flex items-center gap-3 mb-3">
+                                      <div className="text-3xl">{getPetIcon(pet.name)}</div>
+                                      <div className="flex-1">
+                                        <p className="font-bold text-sm">{pet.name}</p>
+                                        <p className="text-xs text-muted-foreground">{pet.village}</p>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <div className="flex justify-between text-sm">
+                                        <span className="text-muted-foreground">Level</span>
+                                        <span className="font-bold">{pet.level} / {pet.maxLevel}</span>
+                                      </div>
+                                      <Progress value={(pet.level / pet.maxLevel) * 100} className="h-2" />
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-center text-muted-foreground py-8">No pets data available</p>
+                          );
+                        })()}
+                      </CardContent>
+                    </Card>
+                  </div>
                 </TabsContent>
 
                 {/* Spells Tab */}
@@ -450,52 +496,6 @@ export default function PlayerLookup() {
                   </Card>
                 </TabsContent>
 
-                {/* Pets Tab */}
-                <TabsContent value="pets">
-                  <Card className="bg-gradient-to-br from-green-500/5 via-emerald-500/5 to-teal-500/5 border-2 border-green-500/20">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-3">
-                        <span className="text-2xl animate-bounce">🐾</span>
-                        <span className="bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
-                          Hero Pets
-                        </span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {(() => {
-                        // CoC API uses 'heroePets' field for pets data
-                        const pets = playerData.heroePets || playerData.pets || [];
-                        
-                        return pets.length > 0 ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {pets.map((pet: any) => (
-                              <Card key={pet.name} className="bg-gradient-to-br from-background/80 to-background/40 border-border/50 hover-scale">
-                                <CardContent className="pt-6">
-                                  <div className="flex items-center gap-3 mb-3">
-                                    <div className="text-3xl">{getPetIcon(pet.name)}</div>
-                                    <div className="flex-1">
-                                      <p className="font-bold text-sm">{pet.name}</p>
-                                      <p className="text-xs text-muted-foreground">{pet.village}</p>
-                                    </div>
-                                  </div>
-                                  <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                      <span className="text-muted-foreground">Level</span>
-                                      <span className="font-bold">{pet.level} / {pet.maxLevel}</span>
-                                    </div>
-                                    <Progress value={(pet.level / pet.maxLevel) * 100} className="h-2" />
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-center text-muted-foreground py-8">No pets data available</p>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
 
                 {/* Achievements Tab */}
                 <TabsContent value="achievements">
