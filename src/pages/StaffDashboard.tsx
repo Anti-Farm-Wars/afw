@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, LogOut, Trash2, UserPlus, Search, Plus, Upload, Tag, User, BookOpen } from "lucide-react";
+import { Shield, LogOut, Trash2, UserPlus, Search, Plus, Upload, Tag, User, BookOpen, Clock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -697,6 +697,14 @@ export default function StaffDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {(userRole === 'admin' || userRole === 'primary_admin') && (
+                <Link to="/sync-update">
+                  <Button variant="outline">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Sync Update
+                  </Button>
+                </Link>
+              )}
               <Link to="/staff/api-docs">
                 <Button variant="outline">
                   <BookOpen className="h-4 w-4 mr-2" />

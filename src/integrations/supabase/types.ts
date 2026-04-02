@@ -88,6 +88,39 @@ export type Database = {
           },
         ]
       }
+      league_schedules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          league_name: string
+          notes: string | null
+          spin_time: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          league_name: string
+          notes?: string | null
+          spin_time: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          league_name?: string
+          notes?: string | null
+          spin_time?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       player_associations: {
         Row: {
           association_type: string
