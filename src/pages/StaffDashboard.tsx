@@ -697,6 +697,14 @@ export default function StaffDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {(userRole === 'admin' || userRole === 'primary_admin') && (
+                <Link to="/sync-update">
+                  <Button variant="outline">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Sync Update
+                  </Button>
+                </Link>
+              )}
               <Link to="/staff/api-docs">
                 <Button variant="outline">
                   <BookOpen className="h-4 w-4 mr-2" />
