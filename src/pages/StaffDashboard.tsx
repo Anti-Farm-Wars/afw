@@ -399,7 +399,7 @@ export default function StaffDashboard() {
         .from("user_roles")
         .insert({
           user_id: userId,
-          role: newRole as "admin" | "primary_admin" | "staff",
+        role: newRole as any,
           created_by: user.id,
         });
 
