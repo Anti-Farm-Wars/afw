@@ -1,57 +1,78 @@
 
 
-## Plan: League War Sync Pages
+## Plan: Role-Based Permissions & Anti-Screenshot Sync Page
 
-### Concept
-Users tap on a league name (FWA, GFL, FWL, BZLM) to see upcoming war spin times for that league, converted to their local timezone. Admins manage these schedules.
+### Overview
+Add a "mod" role with limited permissions, update the role system to support granular access, and add anti-screenshot/anti-recording CSS protections to the Sync page.
 
-### 1. Database: `league_schedules` Table
+### 1. Database: Add New Roles to `app_role` Enum
 
+Add `mod` and `view_sync` values to the existing `app_role` enum via migration:
 ```sql
-CREATE TABLE league_schedules (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  league_name text NOT NULL,  -- 'FWA', 'GFL', 'FWL', 'BZLM'
-  spin_time timestamptz NOT NULL,
-  notes text,
-  status text DEFAULT 'scheduled',  -- scheduled, completed, cancelled
-  created_by uuid,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+ALTER TYPE public.app_role ADD VALUE 'mod';
+ALTER TYPE public.app_role ADD VALUE 'view_sync';
 ```
 
-RLS: Public SELECT, staff INSERT/UPDATE, admin DELETE.
-Enable realtime for live updates.
+### 2. Role Hierarchy & Permissions
 
-### 2. Sync Page (`/sync`) — Logged-in Users
+```text
+primary_admin  → Full access (create any user, assign any role, all pages)
+admin          → Create users, assign roles (except primary_admin), all pages
+mod            → View dashboard, manage associations, view sync, NO user management
+staff          → View dashboard, manage associations only
+view_sync      → Can ONLY view the /sync page (no dashboard access)
+```
 
-- Four clickable league tabs/buttons: **FWA | GFL | FWL | BZLM**
-- Tap a league → shows upcoming spin times for that league
-- Times auto-converted to user's local timezone via `Intl.DateTimeFormat`
-- Countdown timer to next spin
-- Status badges (scheduled/completed/cancelled)
-- Requires authentication
+### 3. Update Staff Dashboard (`StaffDashboard.tsx`)
 
-### 3. Sync Update Page (`/sync-update`) — Admin Only
+- **Create User section**: Admin can now assign initial role from dropdown (staff, mod, view_sync). Primary admin can also assign admin.
+- **Manage Users section**: Add "mod" and "view_sync" to the role selector dropdown.
+- **Mod restrictions**: Mods cannot see the "Staff" tab or create/delete users. They can view and manage associations and types.
+- Hide "Sync Update" button from mods (admin/primary_admin only).
 
-- Add/edit/delete spin times per league
-- Datetime picker for spin time (stored as UTC)
-- Select league from dropdown (FWA/GFL/FWL/BZLM)
-- Bulk status updates (mark completed/cancelled)
-- View all schedules with filters by league
+### 4. Update Sync Page Access (`WarSync.tsx`)
 
-### 4. Navigation & Routing
+- Allow access for roles: `view_sync`, `mod`, `admin`, `primary_admin`, `staff`
+- Currently requires auth only; add role check to ensure user has at least one valid role.
 
-- Add `/sync` route (auth-protected) in `App.tsx`
-- Add `/sync-update` route (admin-protected) in `App.tsx`
-- Add "War Sync" link in Navbar (visible to all, redirects to login if not authenticated)
-- Add "Sync Update" tab in Staff Dashboard
+### 5. Anti-Screenshot / Anti-Recording on Sync Page (`WarSync.tsx`)
 
-### Files to Create/Modify
-- **Create**: `src/pages/WarSync.tsx` — league selector + spin times display
-- **Create**: `src/pages/SyncUpdate.tsx` — admin CRUD for schedules
-- **Modify**: `src/App.tsx` — add routes
-- **Modify**: `src/components/Navbar.tsx` — add Sync nav link
-- **Modify**: `src/pages/StaffDashboard.tsx` — add Sync Update tab/link
-- **Migration**: Create `league_schedules` table with RLS
+Add CSS-based protections to the sync page content:
+- Apply `-webkit-filter: blur()` on visibility change (tab switch)
+- Use CSS `user-select: none` to prevent text selection
+- Add a transparent overlay to interfere with screen capture tools
+- Use `document.addEventListener('visibilitychange')` to blur content when tab is not active
+- Apply CSS: `filter: blur(0)` normally, blur on capture detection
+- Note to user: These are deterrents, not foolproof. Determined users can still capture content.
+
+### 6. Update SyncUpdate Page (`SyncUpdate.tsx`)
+
+- Keep admin/primary_admin only access (already implemented).
+- Add mod check: mods cannot access this page.
+
+### Files to Modify
+- **Migration**: Add `mod` and `view_sync` to `app_role` enum
+- **`src/pages/WarSync.tsx`**: Add anti-screenshot CSS/JS, update role-based access
+- **`src/pages/StaffDashboard.tsx`**: Add mod/view_sync to role dropdowns, restrict mod permissions
+- **`src/pages/SyncUpdate.tsx`**: No changes needed (already admin-only)
+
+### Technical: Anti-Screenshot Implementation
+```css
+.sync-protected {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sync-protected.hidden-capture {
+  filter: blur(20px);
+}
+```
+```js
+// Blur on Print Screen / screenshot attempts
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'PrintScreen') { /* blur content */ }
+});
+document.addEventListener('visibilitychange', () => {
+  // blur when tab loses focus (screen recording switching)
+});
+```
 
