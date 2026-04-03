@@ -1,20 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, Calendar, Shield } from "lucide-react";
+import { Clock, Calendar, Shield, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const LEAGUES = ["FWA", "GFL", "FWL", "BZLM"] as const;
-
-const LEAGUE_COLORS: Record<string, string> = {
-  FWA: "bg-primary text-primary-foreground",
-  GFL: "bg-secondary text-secondary-foreground",
-  FWL: "hsl(270 60% 50%)",
-  BZLM: "hsl(160 60% 40%)",
-};
 
 interface LeagueSchedule {
   id: string;
@@ -28,10 +21,59 @@ interface LeagueSchedule {
 export default function WarSync() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState<string>("FWA");
   const [schedules, setSchedules] = useState<LeagueSchedule[]>([]);
   const [now, setNow] = useState(new Date());
+  const [isBlurred, setIsBlurred] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Anti-screenshot: visibility change detection
+  useEffect(() => {
+    const handleVisibility = () => {
+      setIsBlurred(document.hidden);
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen") {
+        setIsBlurred(true);
+        setTimeout(() => setIsBlurred(false), 3000);
+      }
+    };
+
+    const handleBlur = () => setIsBlurred(true);
+    const handleFocus = () => setIsBlurred(false);
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    document.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      document.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
+
+  // Disable right-click and copy on protected content
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    const prevent = (e: Event) => e.preventDefault();
+    el.addEventListener("contextmenu", prevent);
+    el.addEventListener("copy", prevent);
+    el.addEventListener("cut", prevent);
+
+    return () => {
+      el.removeEventListener("contextmenu", prevent);
+      el.removeEventListener("copy", prevent);
+      el.removeEventListener("cut", prevent);
+    };
+  }, [authorized]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -41,6 +83,19 @@ export default function WarSync() {
         return;
       }
       setUser(session.user);
+
+      // Check if user has any role
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id);
+
+      if (!roles || roles.length === 0) {
+        navigate("/staff");
+        return;
+      }
+
+      setAuthorized(true);
       setLoading(false);
     };
     checkAuth();
@@ -52,6 +107,7 @@ export default function WarSync() {
   }, [navigate]);
 
   useEffect(() => {
+    if (!authorized) return;
     loadSchedules();
 
     const channel = supabase
@@ -62,7 +118,7 @@ export default function WarSync() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [selectedLeague]);
+  }, [selectedLeague, authorized]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -123,12 +179,24 @@ export default function WarSync() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto px-4 pt-24 pb-12">
+      <div
+        ref={contentRef}
+        className="container mx-auto px-4 pt-24 pb-12 transition-all duration-300"
+        style={{
+          userSelect: "none",
+          WebkitUserSelect: "none",
+          filter: isBlurred ? "blur(20px)" : "none",
+        }}
+      >
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">War Sync</h1>
           <p className="text-muted-foreground">
             League war spin times in your local timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone})
           </p>
+          <div className="flex items-center justify-center gap-2 mt-2 text-xs text-muted-foreground">
+            <ShieldAlert className="h-3 w-3" />
+            <span>Protected content — screenshots disabled</span>
+          </div>
         </div>
 
         {/* League Selector */}

@@ -277,6 +277,8 @@ export default function StaffDashboard() {
     }
   };
 
+  const [newStaffRole, setNewStaffRole] = useState<string>("staff");
+
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (userRole !== 'admin' && userRole !== 'primary_admin') {
@@ -310,7 +312,7 @@ export default function StaffDashboard() {
       if (newUser.user) {
         const { error: roleError } = await supabase.from("user_roles").insert({
           user_id: newUser.user.id,
-          role: "staff",
+          role: newStaffRole as any,
           created_by: user.id,
         });
 
@@ -318,10 +320,11 @@ export default function StaffDashboard() {
 
         toast({
           title: "Success",
-          description: "Staff account created successfully!",
+          description: `Account created with role: ${newStaffRole}`,
         });
         setNewStaffEmail("");
         setNewStaffPassword("");
+        setNewStaffRole("staff");
         loadAllUsers();
       }
     } catch (error: any) {
@@ -396,7 +399,7 @@ export default function StaffDashboard() {
         .from("user_roles")
         .insert({
           user_id: userId,
-          role: newRole as "admin" | "primary_admin" | "staff",
+        role: newRole as any,
           created_by: user.id,
         });
 
@@ -1133,8 +1136,8 @@ export default function StaffDashboard() {
                 <div className="space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Create Staff Account</CardTitle>
-                      <CardDescription>Add new staff members who can manage associations</CardDescription>
+                      <CardTitle>Create User Account</CardTitle>
+                      <CardDescription>Add new users with a specific role</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleCreateStaff} className="space-y-4">
@@ -1143,7 +1146,7 @@ export default function StaffDashboard() {
                           <Input
                             id="staff-email"
                             type="email"
-                            placeholder="newstaff@example.com"
+                            placeholder="newuser@example.com"
                             value={newStaffEmail}
                             onChange={(e) => setNewStaffEmail(e.target.value)}
                             required
@@ -1164,9 +1167,26 @@ export default function StaffDashboard() {
                           />
                         </div>
 
+                        <div className="space-y-2">
+                          <Label>Role</Label>
+                          <Select value={newStaffRole} onValueChange={setNewStaffRole}>
+                            <SelectTrigger className="bg-background/50">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="view_sync">View Sync</SelectItem>
+                              <SelectItem value="staff">Staff</SelectItem>
+                              <SelectItem value="mod">Moderator</SelectItem>
+                              {userRole === 'primary_admin' && (
+                                <SelectItem value="admin">Admin</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
                         <Button type="submit" className="w-full">
                           <UserPlus className="h-4 w-4 mr-2" />
-                          Create Staff Account
+                          Create Account
                         </Button>
                       </form>
                     </CardContent>
@@ -1232,7 +1252,9 @@ export default function StaffDashboard() {
                                           <SelectValue placeholder="Select role to add" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                          <SelectItem value="view_sync">View Sync</SelectItem>
                                           <SelectItem value="staff">Staff</SelectItem>
+                                          <SelectItem value="mod">Moderator</SelectItem>
                                           <SelectItem value="admin">Admin</SelectItem>
                                           {userRole === 'primary_admin' && (
                                             <SelectItem value="primary_admin">Primary Admin</SelectItem>
