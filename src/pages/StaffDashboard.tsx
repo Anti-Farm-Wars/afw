@@ -277,6 +277,8 @@ export default function StaffDashboard() {
     }
   };
 
+  const [newStaffRole, setNewStaffRole] = useState<string>("staff");
+
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (userRole !== 'admin' && userRole !== 'primary_admin') {
@@ -310,7 +312,7 @@ export default function StaffDashboard() {
       if (newUser.user) {
         const { error: roleError } = await supabase.from("user_roles").insert({
           user_id: newUser.user.id,
-          role: "staff",
+          role: newStaffRole as any,
           created_by: user.id,
         });
 
@@ -318,10 +320,11 @@ export default function StaffDashboard() {
 
         toast({
           title: "Success",
-          description: "Staff account created successfully!",
+          description: `Account created with role: ${newStaffRole}`,
         });
         setNewStaffEmail("");
         setNewStaffPassword("");
+        setNewStaffRole("staff");
         loadAllUsers();
       }
     } catch (error: any) {
