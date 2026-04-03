@@ -1252,7 +1252,9 @@ export default function StaffDashboard() {
                                           <SelectValue placeholder="Select role to add" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                          <SelectItem value="view_sync">View Sync</SelectItem>
                                           <SelectItem value="staff">Staff</SelectItem>
+                                          <SelectItem value="mod">Moderator</SelectItem>
                                           <SelectItem value="admin">Admin</SelectItem>
                                           {userRole === 'primary_admin' && (
                                             <SelectItem value="primary_admin">Primary Admin</SelectItem>
