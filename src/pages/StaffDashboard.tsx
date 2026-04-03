@@ -1136,8 +1136,8 @@ export default function StaffDashboard() {
                 <div className="space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Create Staff Account</CardTitle>
-                      <CardDescription>Add new staff members who can manage associations</CardDescription>
+                      <CardTitle>Create User Account</CardTitle>
+                      <CardDescription>Add new users with a specific role</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <form onSubmit={handleCreateStaff} className="space-y-4">
@@ -1146,7 +1146,7 @@ export default function StaffDashboard() {
                           <Input
                             id="staff-email"
                             type="email"
-                            placeholder="newstaff@example.com"
+                            placeholder="newuser@example.com"
                             value={newStaffEmail}
                             onChange={(e) => setNewStaffEmail(e.target.value)}
                             required
@@ -1167,9 +1167,26 @@ export default function StaffDashboard() {
                           />
                         </div>
 
+                        <div className="space-y-2">
+                          <Label>Role</Label>
+                          <Select value={newStaffRole} onValueChange={setNewStaffRole}>
+                            <SelectTrigger className="bg-background/50">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="view_sync">View Sync</SelectItem>
+                              <SelectItem value="staff">Staff</SelectItem>
+                              <SelectItem value="mod">Moderator</SelectItem>
+                              {userRole === 'primary_admin' && (
+                                <SelectItem value="admin">Admin</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
                         <Button type="submit" className="w-full">
                           <UserPlus className="h-4 w-4 mr-2" />
-                          Create Staff Account
+                          Create Account
                         </Button>
                       </form>
                     </CardContent>
