@@ -1,78 +1,24 @@
 
 
-## Plan: Role-Based Permissions & Anti-Screenshot Sync Page
+## Plan: Watermark Behind Content
 
-### Overview
-Add a "mod" role with limited permissions, update the role system to support granular access, and add anti-screenshot/anti-recording CSS protections to the Sync page.
+### Change
+Move the watermark overlay **behind** the sync page content instead of on top, so it appears as a background layer.
 
-### 1. Database: Add New Roles to `app_role` Enum
+### Implementation in `src/pages/WarSync.tsx`
 
-Add `mod` and `view_sync` values to the existing `app_role` enum via migration:
-```sql
-ALTER TYPE public.app_role ADD VALUE 'mod';
-ALTER TYPE public.app_role ADD VALUE 'view_sync';
-```
+1. Add a watermark div inside the content container with `z-index: 0` (or `-1`) positioned absolutely behind all content
+2. Wrap the actual page content in a relative div with `z-index: 1` so cards/buttons render on top
+3. Watermark shows user email + date in a repeating diagonal pattern at ~0.06 opacity
+4. Add `@media print` style to hide content when printing
+5. Keep existing anti-screenshot blur/select protections
 
-### 2. Role Hierarchy & Permissions
-
+### Visual Stack
 ```text
-primary_admin  → Full access (create any user, assign any role, all pages)
-admin          → Create users, assign roles (except primary_admin), all pages
-mod            → View dashboard, manage associations, view sync, NO user management
-staff          → View dashboard, manage associations only
-view_sync      → Can ONLY view the /sync page (no dashboard access)
+z-1  ──  watermark layer (user@email.com repeating diagonal)
+z-1  ──  page content (league buttons, cards, etc.) on top
 ```
-
-### 3. Update Staff Dashboard (`StaffDashboard.tsx`)
-
-- **Create User section**: Admin can now assign initial role from dropdown (staff, mod, view_sync). Primary admin can also assign admin.
-- **Manage Users section**: Add "mod" and "view_sync" to the role selector dropdown.
-- **Mod restrictions**: Mods cannot see the "Staff" tab or create/delete users. They can view and manage associations and types.
-- Hide "Sync Update" button from mods (admin/primary_admin only).
-
-### 4. Update Sync Page Access (`WarSync.tsx`)
-
-- Allow access for roles: `view_sync`, `mod`, `admin`, `primary_admin`, `staff`
-- Currently requires auth only; add role check to ensure user has at least one valid role.
-
-### 5. Anti-Screenshot / Anti-Recording on Sync Page (`WarSync.tsx`)
-
-Add CSS-based protections to the sync page content:
-- Apply `-webkit-filter: blur()` on visibility change (tab switch)
-- Use CSS `user-select: none` to prevent text selection
-- Add a transparent overlay to interfere with screen capture tools
-- Use `document.addEventListener('visibilitychange')` to blur content when tab is not active
-- Apply CSS: `filter: blur(0)` normally, blur on capture detection
-- Note to user: These are deterrents, not foolproof. Determined users can still capture content.
-
-### 6. Update SyncUpdate Page (`SyncUpdate.tsx`)
-
-- Keep admin/primary_admin only access (already implemented).
-- Add mod check: mods cannot access this page.
 
 ### Files to Modify
-- **Migration**: Add `mod` and `view_sync` to `app_role` enum
-- **`src/pages/WarSync.tsx`**: Add anti-screenshot CSS/JS, update role-based access
-- **`src/pages/StaffDashboard.tsx`**: Add mod/view_sync to role dropdowns, restrict mod permissions
-- **`src/pages/SyncUpdate.tsx`**: No changes needed (already admin-only)
-
-### Technical: Anti-Screenshot Implementation
-```css
-.sync-protected {
-  user-select: none;
-  -webkit-user-select: none;
-}
-.sync-protected.hidden-capture {
-  filter: blur(20px);
-}
-```
-```js
-// Blur on Print Screen / screenshot attempts
-document.addEventListener('keyup', (e) => {
-  if (e.key === 'PrintScreen') { /* blur content */ }
-});
-document.addEventListener('visibilitychange', () => {
-  // blur when tab loses focus (screen recording switching)
-});
-```
+- `src/pages/WarSync.tsx` — add watermark div behind content
 
