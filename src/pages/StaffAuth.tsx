@@ -21,7 +21,17 @@ export default function StaffAuth() {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/staff/dashboard");
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id);
+        
+        const userRoles = roles?.map(r => r.role) || [];
+        if (userRoles.length === 1 && userRoles[0] === "view_sync") {
+          navigate("/sync");
+        } else {
+          navigate("/staff/dashboard");
+        }
       }
     };
     checkUser();
