@@ -69,11 +69,19 @@ export default function StaffDashboard() {
       .eq("user_id", session.user.id)
       .single();
     
-    setUserRole(roleData?.role || null);
+    const role = roleData?.role || null;
+    setUserRole(role);
+    
+    // view_sync users should only access /sync
+    if (role === 'view_sync') {
+      navigate("/sync");
+      return;
+    }
+    
     loadAssociations();
     loadPlayerAssociations();
     loadAssociationTypes();
-    if (roleData?.role === 'admin' || roleData?.role === 'primary_admin') {
+    if (role === 'admin' || role === 'primary_admin') {
       loadAllUsers();
     }
     setLoading(false);
