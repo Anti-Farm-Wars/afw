@@ -312,6 +312,7 @@ export default function WarSync() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
