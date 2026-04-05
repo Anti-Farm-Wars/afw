@@ -176,18 +176,44 @@ export default function WarSync() {
     );
   }
 
+  const userEmail = user?.email || "authorized";
+
   return (
     <div className="min-h-screen bg-background">
+      <style>{`@media print { .war-sync-protected { display: none !important; } }`}</style>
       <Navbar />
       <div
         ref={contentRef}
-        className="container mx-auto px-4 pt-24 pb-12 transition-all duration-300"
+        className="war-sync-protected container mx-auto px-4 pt-24 pb-12 transition-all duration-300 relative"
         style={{
           userSelect: "none",
           WebkitUserSelect: "none",
           filter: isBlurred ? "blur(20px)" : "none",
         }}
       >
+        {/* Watermark behind content */}
+        <div
+          className="absolute inset-0 pointer-events-none overflow-hidden select-none"
+          style={{ zIndex: 0, opacity: 0.06 }}
+          aria-hidden="true"
+        >
+          <div className="absolute inset-0" style={{ transform: "rotate(-30deg) scale(1.5)", transformOrigin: "center center" }}>
+            <div className="flex flex-col gap-8">
+              {Array.from({ length: 30 }).map((_, row) => (
+                <div key={row} className="flex gap-16 whitespace-nowrap">
+                  {Array.from({ length: 10 }).map((_, col) => (
+                    <span key={col} className="text-sm font-bold text-foreground">
+                      {userEmail} • {new Date().toLocaleDateString()}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Content on top */}
+        <div className="relative" style={{ zIndex: 1 }}>
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">War Sync</h1>
           <p className="text-muted-foreground">
@@ -286,6 +312,7 @@ export default function WarSync() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
