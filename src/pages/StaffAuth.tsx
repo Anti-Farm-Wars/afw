@@ -53,7 +53,22 @@ export default function StaffAuth() {
         title: "Success",
         description: "Logged in successfully",
       });
-      navigate("/staff/dashboard");
+
+      // Check role to decide redirect
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id);
+        
+        const userRoles = roles?.map(r => r.role) || [];
+        if (userRoles.length === 1 && userRoles[0] === "view_sync") {
+          navigate("/sync");
+        } else {
+          navigate("/staff/dashboard");
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Error",
