@@ -58,6 +58,16 @@ export const Navbar = () => {
               </Button>
             </Link>
             
+            <Link to="/war-tracker">
+              <Button 
+                variant={isActive("/war-tracker") ? "default" : "ghost"}
+                className="gap-2"
+              >
+                <Swords className="h-4 w-4" />
+                War Tracker
+              </Button>
+            </Link>
+            
             <Link to="/staff">
               <Button 
                 variant="outline"
