@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, LogIn, Trophy, Clock } from "lucide-react";
+import { Shield, Users, LogIn, Trophy, Clock, Swords } from "lucide-react";
 import logo from "@/assets/afw-logo.png";
 
 export const Navbar = () => {
