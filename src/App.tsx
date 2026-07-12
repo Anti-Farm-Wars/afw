@@ -14,6 +14,7 @@ import StaffAuth from "./pages/StaffAuth";
 import StaffDashboard from "./pages/StaffDashboard";
 import ApiDocumentation from "./pages/ApiDocumentation";
 import WarSync from "./pages/WarSync";
+import WarMatchTracker from "./pages/WarMatchTracker";
 import SyncUpdate from "./pages/SyncUpdate";
 
 import NotFound from "./pages/NotFound";
@@ -41,6 +42,8 @@ const App = () => {
             <Route path="/staff/dashboard" element={<StaffDashboard />} />
             <Route path="/staff/api-docs" element={<ApiDocumentation />} />
             <Route path="/sync" element={<WarSync />} />
+            <Route path="/war-tracker" element={<WarMatchTracker />} />
+
             <Route path="/sync-update" element={<SyncUpdate />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

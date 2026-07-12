@@ -1183,6 +1183,7 @@ export default function StaffDashboard() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="view_sync">View Sync</SelectItem>
+                              <SelectItem value="war_tracker">War Tracker</SelectItem>
                               <SelectItem value="staff">Staff</SelectItem>
                               <SelectItem value="mod">Moderator</SelectItem>
                               {userRole === 'primary_admin' && (
@@ -1261,6 +1262,7 @@ export default function StaffDashboard() {
                                         </SelectTrigger>
                                         <SelectContent>
                                           <SelectItem value="view_sync">View Sync</SelectItem>
+                                          <SelectItem value="war_tracker">War Tracker</SelectItem>
                                           <SelectItem value="staff">Staff</SelectItem>
                                           <SelectItem value="mod">Moderator</SelectItem>
                                           <SelectItem value="admin">Admin</SelectItem>

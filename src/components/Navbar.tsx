@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, LogIn, Trophy, Clock } from "lucide-react";
+import { Shield, Users, LogIn, Trophy, Clock, Swords } from "lucide-react";
 import logo from "@/assets/afw-logo.png";
 
 export const Navbar = () => {
@@ -55,6 +55,16 @@ export const Navbar = () => {
               >
                 <Clock className="h-4 w-4" />
                 War Sync
+              </Button>
+            </Link>
+            
+            <Link to="/war-tracker">
+              <Button 
+                variant={isActive("/war-tracker") ? "default" : "ghost"}
+                className="gap-2"
+              >
+                <Swords className="h-4 w-4" />
+                War Tracker
               </Button>
             </Link>
             

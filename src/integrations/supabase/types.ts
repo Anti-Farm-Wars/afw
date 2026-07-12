@@ -213,11 +213,107 @@ export type Database = {
         }
         Relationships: []
       }
+      war_match_results: {
+        Row: {
+          clan_name: string | null
+          clan_tag: string
+          created_at: string
+          id: string
+          is_association: boolean
+          is_blacklisted: boolean
+          is_match: boolean
+          opponent_name: string | null
+          opponent_tag: string | null
+          scan_id: string
+          war_state: string | null
+        }
+        Insert: {
+          clan_name?: string | null
+          clan_tag: string
+          created_at?: string
+          id?: string
+          is_association?: boolean
+          is_blacklisted?: boolean
+          is_match?: boolean
+          opponent_name?: string | null
+          opponent_tag?: string | null
+          scan_id: string
+          war_state?: string | null
+        }
+        Update: {
+          clan_name?: string | null
+          clan_tag?: string
+          created_at?: string
+          id?: string
+          is_association?: boolean
+          is_blacklisted?: boolean
+          is_match?: boolean
+          opponent_name?: string | null
+          opponent_tag?: string | null
+          scan_id?: string
+          war_state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "war_match_results_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "war_match_scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      war_match_scans: {
+        Row: {
+          association_matches: number
+          blacklisted_matches: number
+          clans_in_war: number
+          created_at: string
+          id: string
+          mismatch_percentage: number
+          mismatches: number
+          run_by: string | null
+          status: string
+          successful_matches: number
+          total_clans: number
+          updated_at: string
+        }
+        Insert: {
+          association_matches?: number
+          blacklisted_matches?: number
+          clans_in_war?: number
+          created_at?: string
+          id?: string
+          mismatch_percentage?: number
+          mismatches?: number
+          run_by?: string | null
+          status?: string
+          successful_matches?: number
+          total_clans?: number
+          updated_at?: string
+        }
+        Update: {
+          association_matches?: number
+          blacklisted_matches?: number
+          clans_in_war?: number
+          created_at?: string
+          id?: string
+          mismatch_percentage?: number
+          mismatches?: number
+          run_by?: string | null
+          status?: string
+          successful_matches?: number
+          total_clans?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      can_view_war_tracker: { Args: { _user_id: string }; Returns: boolean }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -229,7 +325,13 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "primary_admin" | "admin" | "staff" | "mod" | "view_sync"
+      app_role:
+        | "primary_admin"
+        | "admin"
+        | "staff"
+        | "mod"
+        | "view_sync"
+        | "war_tracker"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -357,7 +459,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["primary_admin", "admin", "staff", "mod", "view_sync"],
+      app_role: [
+        "primary_admin",
+        "admin",
+        "staff",
+        "mod",
+        "view_sync",
+        "war_tracker",
+      ],
     },
   },
 } as const
