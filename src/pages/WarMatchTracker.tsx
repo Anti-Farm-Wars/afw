@@ -404,8 +404,51 @@ export default function WarMatchTracker() {
                    </div>
                 )}
               </CardContent>
-            </Card>
-          </>
+             </Card>
+
+             <Dialog open={Boolean(assocTarget)} onOpenChange={(open) => !open && setAssocTarget(null)}>
+               <DialogContent>
+                 <DialogHeader>
+                   <DialogTitle>Add clan association</DialogTitle>
+                   <DialogDescription>
+                     Add {assocTarget?.opponent_name || assocTarget?.opponent_tag} to your association list.
+                   </DialogDescription>
+                 </DialogHeader>
+                 <div className="space-y-4 py-2">
+                   <div className="space-y-2">
+                     <Label>Association type</Label>
+                     <Select value={assocType} onValueChange={setAssocType}>
+                       <SelectTrigger>
+                         <SelectValue placeholder="Select a type" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {assocTypes.map((type) => (
+                           <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="association-description">Description</Label>
+                     <Textarea
+                       id="association-description"
+                       value={assocDescription}
+                       onChange={(event) => setAssocDescription(event.target.value)}
+                       placeholder="Optional note"
+                       maxLength={500}
+                     />
+                   </div>
+                 </div>
+                 <DialogFooter>
+                   <Button variant="outline" onClick={() => setAssocTarget(null)}>Cancel</Button>
+                   <Button onClick={saveAssociation} disabled={savingAssoc || !assocType}>
+                     {savingAssoc ? "Saving..." : "Save association"}
+                   </Button>
+                 </DialogFooter>
+               </DialogContent>
+             </Dialog>
+           </>
+
         )}
       </main>
     </div>
