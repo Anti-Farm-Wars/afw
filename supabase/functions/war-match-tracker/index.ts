@@ -106,14 +106,29 @@ Deno.serve(async (req) => {
     if (scanErr) throw scanErr;
     scanId = scan.id;
 
-    const fetchCurrentWar = async (tag: string) => {
+    let okResponses = 0;
+    let forbidden = 0;
+
+    const fetchCurrentWar = async (tag: string, retry = true): Promise<any> => {
       const encoded = encodeURIComponent(normalizeTag(tag));
       const url = `https://api.clashofclans.com/v1/clans/${encoded}/currentwar`;
       try {
         const resp = await fetch(url, {
           headers: { Authorization: `Bearer ${cocToken}`, Accept: 'application/json' },
         });
+        if (resp.status === 403) {
+          forbidden += 1;
+          if (retry) {
+            const fresh = await generateKey();
+            if (fresh && fresh !== cocToken) {
+              cocToken = fresh;
+              return await fetchCurrentWar(tag, false);
+            }
+          }
+          return null;
+        }
         if (!resp.ok) return null;
+        okResponses += 1;
         return await resp.json();
       } catch (_) {
         return null;
@@ -126,6 +141,7 @@ Deno.serve(async (req) => {
     let mismatches = 0;
     let blacklistedMatches = 0;
     let associationMatches = 0;
+
 
     for (let i = 0; i < trackedClans.length; i += BATCH_SIZE) {
       const batch = trackedClans.slice(i, i + BATCH_SIZE);
