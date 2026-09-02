@@ -77,8 +77,15 @@ interface Result {
 export default function WarMatchTracker() {
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
   const [scan, setScan] = useState<Scan | null>(null);
   const [mismatches, setMismatches] = useState<Result[]>([]);
+  const [matchCounts, setMatchCounts] = useState<Record<string, number>>({});
+  const [assocTypes, setAssocTypes] = useState<{ id: string; name: string }[]>([]);
+  const [assocTarget, setAssocTarget] = useState<Result | null>(null);
+  const [assocType, setAssocType] = useState("");
+  const [assocDescription, setAssocDescription] = useState("");
+  const [savingAssoc, setSavingAssoc] = useState(false);
   const [running, setRunning] = useState(false);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
@@ -101,13 +108,22 @@ export default function WarMatchTracker() {
         navigate("/staff");
         return;
       }
+      setIsStaff(roleList.some((r) => STAFF_ROLES.includes(r)));
       setAuthorized(true);
       setLoading(false);
+
+      const { data: types } = await supabase
+        .from("association_types")
+        .select("id, name")
+        .order("name");
+      setAssocTypes(types ?? []);
+
       await loadLatest();
     };
     checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
+
 
   const loadLatest = async () => {
     const { data: scans } = await supabase
