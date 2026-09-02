@@ -33,11 +33,12 @@ Deno.serve(async (req) => {
     }
 
     // --- Resolve a CoC API token (static or dynamically generated) ---
-    let cocToken = Deno.env.get('COC_API_TOKEN');
     const cocEmail = Deno.env.get('COC_EMAIL');
     const cocPassword = Deno.env.get('COC_PASSWORD');
+    let cocToken = Deno.env.get('COC_API_TOKEN');
 
-    if (cocEmail && cocPassword) {
+    const generateKey = async (): Promise<string | null> => {
+      if (!cocEmail || !cocPassword) return null;
       try {
         const ipResponse = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipResponse.json();
@@ -53,12 +54,17 @@ Deno.serve(async (req) => {
         });
         if (keyGenResponse.ok) {
           const keyData = await keyGenResponse.json();
-          if (keyData.key) cocToken = keyData.key;
+          if (keyData.key) return keyData.key as string;
         }
+        console.log('Key generation returned', keyGenResponse.status);
       } catch (error) {
-        console.log('Dynamic key generation failed, using static token:', error);
+        console.log('Dynamic key generation failed:', error);
       }
-    }
+      return null;
+    };
+
+    const generated = await generateKey();
+    if (generated) cocToken = generated;
 
     if (!cocToken) {
       return new Response(JSON.stringify({ error: 'API token not configured' }), {
@@ -66,6 +72,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
 
     // --- Fetch tracked FWA clans ---
     const clansResp = await fetch(CLANS_URL);
