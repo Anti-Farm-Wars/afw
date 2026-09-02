@@ -147,10 +147,65 @@ export default function WarMatchTracker() {
         .not("opponent_tag", "is", null)
         .order("clan_name", { ascending: true });
       setMismatches((results as Result[]) ?? []);
+
+      const { data: counts } = await supabase.rpc("get_opponent_match_counts");
+      const map: Record<string, number> = {};
+      for (const row of (counts ?? []) as { opponent_tag: string; times_matched: number }[]) {
+        map[row.opponent_tag] = Number(row.times_matched);
+      }
+      setMatchCounts(map);
     } else {
       setMismatches([]);
+      setMatchCounts({});
     }
   };
+
+  const openAssocDialog = (result: Result) => {
+    setAssocTarget(result);
+    setAssocType(assocTypes[0]?.name ?? "");
+    setAssocDescription("");
+  };
+
+  const saveAssociation = async () => {
+    if (!assocTarget?.opponent_tag || !assocType) return;
+    setSavingAssoc(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const typeRow = assocTypes.find((t) => t.name === assocType);
+      const { error } = await supabase.from("clan_associations").insert({
+        clan_tag: assocTarget.opponent_tag,
+        clan_name: assocTarget.opponent_name || assocTarget.opponent_tag,
+        association_type: assocType,
+        association_type_id: typeRow?.id ?? null,
+        description: assocDescription || null,
+        updated_by: user?.id ?? null,
+      });
+      if (error) throw error;
+
+      const tag = assocTarget.opponent_tag;
+      const isBlacklist = assocType.trim().toLowerCase() === "blacklist";
+      setMismatches((prev) =>
+        prev.map((r) =>
+          r.opponent_tag === tag
+            ? { ...r, is_association: true, is_blacklisted: r.is_blacklisted || isBlacklist }
+            : r
+        )
+      );
+      toast({ title: "Association added", description: `${assocTarget.opponent_name || tag} → ${assocType}` });
+      setAssocTarget(null);
+    } catch (err: any) {
+      toast({
+        title: "Could not add association",
+        description: err?.message?.includes("permission")
+          ? "You don't have permission to add associations."
+          : err?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAssoc(false);
+    }
+  };
+
 
   const runScan = async () => {
     setRunning(true);
