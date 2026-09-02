@@ -333,54 +333,75 @@ export default function WarMatchTracker() {
                     No mismatches found for this scan.
                   </p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tracked Clan</TableHead>
-                          <TableHead>Tag</TableHead>
-                          <TableHead>Opponent</TableHead>
-                          <TableHead>Opponent Tag</TableHead>
-                          <TableHead>War State</TableHead>
-                          <TableHead>Flags</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filtered.map((r) => (
-                          <TableRow key={r.id}>
-                            <TableCell className="font-medium">{r.clan_name || "—"}</TableCell>
-                            <TableCell className="text-muted-foreground font-mono text-xs">
-                              {r.clan_tag}
-                            </TableCell>
-                            <TableCell>{r.opponent_name || "Unknown"}</TableCell>
-                            <TableCell className="text-muted-foreground font-mono text-xs">
-                              {r.opponent_tag}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="capitalize">
-                                {r.war_state}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {r.is_blacklisted && (
-                                  <Badge variant="destructive" className="gap-1">
-                                    <Ban className="h-3 w-3" /> Blacklist
-                                  </Badge>
-                                )}
-                                {r.is_association && !r.is_blacklisted && (
-                                  <Badge variant="secondary">Association</Badge>
-                                )}
-                                {!r.is_association && !r.is_blacklisted && (
-                                  <span className="text-xs text-muted-foreground">Unknown clan</span>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                   <div className="overflow-x-auto">
+                     <Table>
+                       <TableHeader>
+                         <TableRow>
+                           <TableHead>Tracked Clan</TableHead>
+                           <TableHead>Tag</TableHead>
+                           <TableHead>Opponent</TableHead>
+                           <TableHead>Opponent Tag</TableHead>
+                           <TableHead>FWA Match Count</TableHead>
+                           <TableHead>War State</TableHead>
+                           <TableHead>Flags</TableHead>
+                           {isStaff && <TableHead className="text-right">Action</TableHead>}
+                         </TableRow>
+                       </TableHeader>
+                       <TableBody>
+                         {filtered.map((r) => (
+                           <TableRow key={r.id}>
+                             <TableCell className="font-medium">{r.clan_name || "—"}</TableCell>
+                             <TableCell className="text-muted-foreground font-mono text-xs">
+                               {r.clan_tag}
+                             </TableCell>
+                             <TableCell>{r.opponent_name || "Unknown"}</TableCell>
+                             <TableCell className="text-muted-foreground font-mono text-xs">
+                               {r.opponent_tag}
+                             </TableCell>
+                             <TableCell>
+                               <Badge variant="secondary" className="gap-1">
+                                 <Repeat className="h-3 w-3" />
+                                 {matchCounts[r.opponent_tag || ""] ?? 0}
+                               </Badge>
+                             </TableCell>
+                             <TableCell>
+                               <Badge variant="outline" className="capitalize">
+                                 {r.war_state}
+                               </Badge>
+                             </TableCell>
+                             <TableCell>
+                               <div className="flex flex-wrap gap-1">
+                                 {r.is_blacklisted && (
+                                   <Badge variant="destructive" className="gap-1">
+                                     <Ban className="h-3 w-3" /> Blacklist
+                                   </Badge>
+                                 )}
+                                 {r.is_association && !r.is_blacklisted && (
+                                   <Badge variant="secondary">Association</Badge>
+                                 )}
+                                 {!r.is_association && !r.is_blacklisted && (
+                                   <span className="text-xs text-muted-foreground">Unknown clan</span>
+                                 )}
+                               </div>
+                             </TableCell>
+                             {isStaff && (
+                               <TableCell className="text-right">
+                                 <Button
+                                   variant="outline"
+                                   size="sm"
+                                   className="gap-1"
+                                   onClick={() => openAssocDialog(r)}
+                                 >
+                                   <Plus className="h-3.5 w-3.5" />
+                                   Associate
+                                 </Button>
+                               </TableCell>
+                             )}
+                           </TableRow>
+                         ))}
+                       </TableBody>
+                     </Table>
+                   </div>
                 )}
               </CardContent>
             </Card>
