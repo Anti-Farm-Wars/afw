@@ -195,6 +195,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // If the API never answered, don't publish an empty scan
+    if (okResponses === 0) {
+      console.error(`API unreachable: 0 successful responses, ${forbidden} forbidden`);
+      await supabase.from('war_match_scans').update({ status: 'failed' }).eq('id', scanId);
+      return new Response(
+        JSON.stringify({ error: 'Clash of Clans API unreachable (all requests failed)', forbidden }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // Persist results in chunks
     for (let i = 0; i < results.length; i += 500) {
       const { error: insErr } = await supabase
@@ -202,6 +212,7 @@ Deno.serve(async (req) => {
         .insert(results.slice(i, i + 500));
       if (insErr) throw insErr;
     }
+
 
     const decided = successfulMatches + mismatches;
     const mismatchPct = decided > 0 ? Number(((mismatches / decided) * 100).toFixed(2)) : 0;
