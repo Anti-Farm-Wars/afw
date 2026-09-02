@@ -33,11 +33,12 @@ Deno.serve(async (req) => {
     }
 
     // --- Resolve a CoC API token (static or dynamically generated) ---
-    let cocToken = Deno.env.get('COC_API_TOKEN');
     const cocEmail = Deno.env.get('COC_EMAIL');
     const cocPassword = Deno.env.get('COC_PASSWORD');
+    let cocToken = Deno.env.get('COC_API_TOKEN');
 
-    if (cocEmail && cocPassword) {
+    const generateKey = async (): Promise<string | null> => {
+      if (!cocEmail || !cocPassword) return null;
       try {
         const ipResponse = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipResponse.json();
@@ -53,12 +54,17 @@ Deno.serve(async (req) => {
         });
         if (keyGenResponse.ok) {
           const keyData = await keyGenResponse.json();
-          if (keyData.key) cocToken = keyData.key;
+          if (keyData.key) return keyData.key as string;
         }
+        console.log('Key generation returned', keyGenResponse.status);
       } catch (error) {
-        console.log('Dynamic key generation failed, using static token:', error);
+        console.log('Dynamic key generation failed:', error);
       }
-    }
+      return null;
+    };
+
+    const generated = await generateKey();
+    if (generated) cocToken = generated;
 
     if (!cocToken) {
       return new Response(JSON.stringify({ error: 'API token not configured' }), {
@@ -66,6 +72,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
 
     // --- Fetch tracked FWA clans ---
     const clansResp = await fetch(CLANS_URL);
@@ -99,14 +106,29 @@ Deno.serve(async (req) => {
     if (scanErr) throw scanErr;
     scanId = scan.id;
 
-    const fetchCurrentWar = async (tag: string) => {
+    let okResponses = 0;
+    let forbidden = 0;
+
+    const fetchCurrentWar = async (tag: string, retry = true): Promise<any> => {
       const encoded = encodeURIComponent(normalizeTag(tag));
       const url = `https://api.clashofclans.com/v1/clans/${encoded}/currentwar`;
       try {
         const resp = await fetch(url, {
           headers: { Authorization: `Bearer ${cocToken}`, Accept: 'application/json' },
         });
+        if (resp.status === 403) {
+          forbidden += 1;
+          if (retry) {
+            const fresh = await generateKey();
+            if (fresh && fresh !== cocToken) {
+              cocToken = fresh;
+              return await fetchCurrentWar(tag, false);
+            }
+          }
+          return null;
+        }
         if (!resp.ok) return null;
+        okResponses += 1;
         return await resp.json();
       } catch (_) {
         return null;
@@ -119,6 +141,7 @@ Deno.serve(async (req) => {
     let mismatches = 0;
     let blacklistedMatches = 0;
     let associationMatches = 0;
+
 
     for (let i = 0; i < trackedClans.length; i += BATCH_SIZE) {
       const batch = trackedClans.slice(i, i + BATCH_SIZE);
@@ -172,6 +195,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // If the API never answered, don't publish an empty scan
+    if (okResponses === 0) {
+      console.error(`API unreachable: 0 successful responses, ${forbidden} forbidden`);
+      await supabase.from('war_match_scans').update({ status: 'failed' }).eq('id', scanId);
+      return new Response(
+        JSON.stringify({ error: 'Clash of Clans API unreachable (all requests failed)', forbidden }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // Persist results in chunks
     for (let i = 0; i < results.length; i += 500) {
       const { error: insErr } = await supabase
@@ -179,6 +212,7 @@ Deno.serve(async (req) => {
         .insert(results.slice(i, i + 500));
       if (insErr) throw insErr;
     }
+
 
     const decided = successfulMatches + mismatches;
     const mismatchPct = decided > 0 ? Number(((mismatches / decided) * 100).toFixed(2)) : 0;

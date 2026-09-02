@@ -92,11 +92,14 @@ export default function WarMatchTracker() {
     const { data: scans } = await supabase
       .from("war_match_scans")
       .select("*")
+      .eq("status", "completed")
+      .gt("clans_in_war", 0)
       .order("created_at", { ascending: false })
       .limit(1);
 
     const latest = (scans as Scan[] | null)?.[0] ?? null;
     setScan(latest);
+
 
     if (latest) {
       const { data: results } = await supabase
