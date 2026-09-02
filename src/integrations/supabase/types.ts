@@ -314,6 +314,13 @@ export type Database = {
     }
     Functions: {
       can_view_war_tracker: { Args: { _user_id: string }; Returns: boolean }
+      get_opponent_match_counts: {
+        Args: never
+        Returns: {
+          opponent_tag: string
+          times_matched: number
+        }[]
+      }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {

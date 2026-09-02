@@ -5,6 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -22,11 +39,15 @@ import {
   Users,
   Percent,
   Search,
+  Plus,
+  Repeat,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const ALLOWED_ROLES = ["primary_admin", "admin", "mod", "war_tracker"];
+const STAFF_ROLES = ["primary_admin", "admin", "mod", "staff"];
+
 
 interface Scan {
   id: string;
@@ -56,8 +77,15 @@ interface Result {
 export default function WarMatchTracker() {
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
   const [scan, setScan] = useState<Scan | null>(null);
   const [mismatches, setMismatches] = useState<Result[]>([]);
+  const [matchCounts, setMatchCounts] = useState<Record<string, number>>({});
+  const [assocTypes, setAssocTypes] = useState<{ id: string; name: string }[]>([]);
+  const [assocTarget, setAssocTarget] = useState<Result | null>(null);
+  const [assocType, setAssocType] = useState("");
+  const [assocDescription, setAssocDescription] = useState("");
+  const [savingAssoc, setSavingAssoc] = useState(false);
   const [running, setRunning] = useState(false);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
@@ -80,13 +108,22 @@ export default function WarMatchTracker() {
         navigate("/staff");
         return;
       }
+      setIsStaff(roleList.some((r) => STAFF_ROLES.includes(r)));
       setAuthorized(true);
       setLoading(false);
+
+      const { data: types } = await supabase
+        .from("association_types")
+        .select("id, name")
+        .order("name");
+      setAssocTypes(types ?? []);
+
       await loadLatest();
     };
     checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
+
 
   const loadLatest = async () => {
     const { data: scans } = await supabase
@@ -110,10 +147,65 @@ export default function WarMatchTracker() {
         .not("opponent_tag", "is", null)
         .order("clan_name", { ascending: true });
       setMismatches((results as Result[]) ?? []);
+
+      const { data: counts } = await supabase.rpc("get_opponent_match_counts");
+      const map: Record<string, number> = {};
+      for (const row of (counts ?? []) as { opponent_tag: string; times_matched: number }[]) {
+        map[row.opponent_tag] = Number(row.times_matched);
+      }
+      setMatchCounts(map);
     } else {
       setMismatches([]);
+      setMatchCounts({});
     }
   };
+
+  const openAssocDialog = (result: Result) => {
+    setAssocTarget(result);
+    setAssocType(assocTypes[0]?.name ?? "");
+    setAssocDescription("");
+  };
+
+  const saveAssociation = async () => {
+    if (!assocTarget?.opponent_tag || !assocType) return;
+    setSavingAssoc(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const typeRow = assocTypes.find((t) => t.name === assocType);
+      const { error } = await supabase.from("clan_associations").insert({
+        clan_tag: assocTarget.opponent_tag,
+        clan_name: assocTarget.opponent_name || assocTarget.opponent_tag,
+        association_type: assocType,
+        association_type_id: typeRow?.id ?? null,
+        description: assocDescription || null,
+        updated_by: user?.id ?? null,
+      });
+      if (error) throw error;
+
+      const tag = assocTarget.opponent_tag;
+      const isBlacklist = assocType.trim().toLowerCase() === "blacklist";
+      setMismatches((prev) =>
+        prev.map((r) =>
+          r.opponent_tag === tag
+            ? { ...r, is_association: true, is_blacklisted: r.is_blacklisted || isBlacklist }
+            : r
+        )
+      );
+      toast({ title: "Association added", description: `${assocTarget.opponent_name || tag} → ${assocType}` });
+      setAssocTarget(null);
+    } catch (err: any) {
+      toast({
+        title: "Could not add association",
+        description: err?.message?.includes("permission")
+          ? "You don't have permission to add associations."
+          : err?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAssoc(false);
+    }
+  };
+
 
   const runScan = async () => {
     setRunning(true);
@@ -241,58 +333,122 @@ export default function WarMatchTracker() {
                     No mismatches found for this scan.
                   </p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tracked Clan</TableHead>
-                          <TableHead>Tag</TableHead>
-                          <TableHead>Opponent</TableHead>
-                          <TableHead>Opponent Tag</TableHead>
-                          <TableHead>War State</TableHead>
-                          <TableHead>Flags</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filtered.map((r) => (
-                          <TableRow key={r.id}>
-                            <TableCell className="font-medium">{r.clan_name || "—"}</TableCell>
-                            <TableCell className="text-muted-foreground font-mono text-xs">
-                              {r.clan_tag}
-                            </TableCell>
-                            <TableCell>{r.opponent_name || "Unknown"}</TableCell>
-                            <TableCell className="text-muted-foreground font-mono text-xs">
-                              {r.opponent_tag}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="capitalize">
-                                {r.war_state}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {r.is_blacklisted && (
-                                  <Badge variant="destructive" className="gap-1">
-                                    <Ban className="h-3 w-3" /> Blacklist
-                                  </Badge>
-                                )}
-                                {r.is_association && !r.is_blacklisted && (
-                                  <Badge variant="secondary">Association</Badge>
-                                )}
-                                {!r.is_association && !r.is_blacklisted && (
-                                  <span className="text-xs text-muted-foreground">Unknown clan</span>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                   <div className="overflow-x-auto">
+                     <Table>
+                       <TableHeader>
+                         <TableRow>
+                           <TableHead>Tracked Clan</TableHead>
+                           <TableHead>Tag</TableHead>
+                           <TableHead>Opponent</TableHead>
+                           <TableHead>Opponent Tag</TableHead>
+                           <TableHead>FWA Match Count</TableHead>
+                           <TableHead>War State</TableHead>
+                           <TableHead>Flags</TableHead>
+                           {isStaff && <TableHead className="text-right">Action</TableHead>}
+                         </TableRow>
+                       </TableHeader>
+                       <TableBody>
+                         {filtered.map((r) => (
+                           <TableRow key={r.id}>
+                             <TableCell className="font-medium">{r.clan_name || "—"}</TableCell>
+                             <TableCell className="text-muted-foreground font-mono text-xs">
+                               {r.clan_tag}
+                             </TableCell>
+                             <TableCell>{r.opponent_name || "Unknown"}</TableCell>
+                             <TableCell className="text-muted-foreground font-mono text-xs">
+                               {r.opponent_tag}
+                             </TableCell>
+                             <TableCell>
+                               <Badge variant="secondary" className="gap-1">
+                                 <Repeat className="h-3 w-3" />
+                                 {matchCounts[r.opponent_tag || ""] ?? 0}
+                               </Badge>
+                             </TableCell>
+                             <TableCell>
+                               <Badge variant="outline" className="capitalize">
+                                 {r.war_state}
+                               </Badge>
+                             </TableCell>
+                             <TableCell>
+                               <div className="flex flex-wrap gap-1">
+                                 {r.is_blacklisted && (
+                                   <Badge variant="destructive" className="gap-1">
+                                     <Ban className="h-3 w-3" /> Blacklist
+                                   </Badge>
+                                 )}
+                                 {r.is_association && !r.is_blacklisted && (
+                                   <Badge variant="secondary">Association</Badge>
+                                 )}
+                                 {!r.is_association && !r.is_blacklisted && (
+                                   <span className="text-xs text-muted-foreground">Unknown clan</span>
+                                 )}
+                               </div>
+                             </TableCell>
+                             {isStaff && (
+                               <TableCell className="text-right">
+                                 <Button
+                                   variant="outline"
+                                   size="sm"
+                                   className="gap-1"
+                                   onClick={() => openAssocDialog(r)}
+                                 >
+                                   <Plus className="h-3.5 w-3.5" />
+                                   Associate
+                                 </Button>
+                               </TableCell>
+                             )}
+                           </TableRow>
+                         ))}
+                       </TableBody>
+                     </Table>
+                   </div>
                 )}
               </CardContent>
-            </Card>
-          </>
+             </Card>
+
+             <Dialog open={Boolean(assocTarget)} onOpenChange={(open) => !open && setAssocTarget(null)}>
+               <DialogContent>
+                 <DialogHeader>
+                   <DialogTitle>Add clan association</DialogTitle>
+                   <DialogDescription>
+                     Add {assocTarget?.opponent_name || assocTarget?.opponent_tag} to your association list.
+                   </DialogDescription>
+                 </DialogHeader>
+                 <div className="space-y-4 py-2">
+                   <div className="space-y-2">
+                     <Label>Association type</Label>
+                     <Select value={assocType} onValueChange={setAssocType}>
+                       <SelectTrigger>
+                         <SelectValue placeholder="Select a type" />
+                       </SelectTrigger>
+                       <SelectContent>
+                         {assocTypes.map((type) => (
+                           <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
+                         ))}
+                       </SelectContent>
+                     </Select>
+                   </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="association-description">Description</Label>
+                     <Textarea
+                       id="association-description"
+                       value={assocDescription}
+                       onChange={(event) => setAssocDescription(event.target.value)}
+                       placeholder="Optional note"
+                       maxLength={500}
+                     />
+                   </div>
+                 </div>
+                 <DialogFooter>
+                   <Button variant="outline" onClick={() => setAssocTarget(null)}>Cancel</Button>
+                   <Button onClick={saveAssociation} disabled={savingAssoc || !assocType}>
+                     {savingAssoc ? "Saving..." : "Save association"}
+                   </Button>
+                 </DialogFooter>
+               </DialogContent>
+             </Dialog>
+           </>
+
         )}
       </main>
     </div>
