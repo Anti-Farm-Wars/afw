@@ -88,6 +88,39 @@ export type Database = {
           },
         ]
       }
+      hunter_settings: {
+        Row: {
+          created_at: string
+          id: string
+          live_days: number
+          min_encounters: number
+          min_size_samples: number
+          retired_days: number
+          size_consistency_pct: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          live_days?: number
+          min_encounters?: number
+          min_size_samples?: number
+          retired_days?: number
+          size_consistency_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          live_days?: number
+          min_encounters?: number
+          min_size_samples?: number
+          retired_days?: number
+          size_consistency_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       league_schedules: {
         Row: {
           created_at: string
@@ -225,6 +258,7 @@ export type Database = {
           opponent_name: string | null
           opponent_tag: string | null
           scan_id: string
+          team_size: number | null
           war_state: string | null
         }
         Insert: {
@@ -238,6 +272,7 @@ export type Database = {
           opponent_name?: string | null
           opponent_tag?: string | null
           scan_id: string
+          team_size?: number | null
           war_state?: string | null
         }
         Update: {
@@ -251,6 +286,7 @@ export type Database = {
           opponent_name?: string | null
           opponent_tag?: string | null
           scan_id?: string
+          team_size?: number | null
           war_state?: string | null
         }
         Relationships: [
@@ -314,6 +350,25 @@ export type Database = {
     }
     Functions: {
       can_view_war_tracker: { Args: { _user_id: string }; Returns: boolean }
+      get_hunter_lists: {
+        Args: never
+        Returns: {
+          association_type: string
+          consistent_composition: boolean
+          days_since_last: number
+          encounters: number
+          first_seen: string
+          is_blacklisted: boolean
+          last_seen: string
+          list_type: string
+          opponent_name: string
+          opponent_tag: string
+          size_consistency: number
+          size_samples: number
+          top_opponents: string[]
+          usual_team_size: number
+        }[]
+      }
       get_opponent_match_counts: {
         Args: never
         Returns: {
