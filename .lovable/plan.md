@@ -1,62 +1,44 @@
-## Plan: War Match Tracker
+# Hunter Lists + Public Data API
 
-### Concept
-Track whether FWA clans are correctly matched. The tracked clan list comes from `https://fwastats.com/Clans.json` (417 FWA clans). For each tracked clan we fetch its **live current-war opponent** from the Clash of Clans API and check whether that opponent is also in the FWA list:
+Automatically classify the clans that keep bumping into FWA clans into three living lists, and expose them over a key-protected API.
 
-- Opponent **in** FWA list → **Successful match**
-- Opponent **not in** FWA list → **Mismatch**
+## The three lists
 
-Opponents are also cross-referenced against clan associations for Blacklisted and Association-based counts.
+| List | Rule |
+| --- | --- |
+| Hunting Clans | 10 or more separate war encounters against FWA clans, all time |
+| Live Hunters | Hunting Clan, seen within the last 14 days, and consistent war size |
+| Retired Hunters | Hunting Clan with nothing seen for 30+ days |
 
-### Stats shown
+Clans between 14 and 30 days quiet stay as Hunting Clans only — they are neither live nor retired yet.
+
+## How encounters are counted
+
+Scans run hourly, so the same war appears in many scans. One "encounter" = one FWA clan vs one opponent clan on one day. Using that rule on the history already stored: about 105 clans reach 10+ encounters, 225 have been seen in the last 14 days, and 515 have been quiet 30+ days.
+
+## War size / composition
+
+War size is not currently recorded. The tracker will start saving the team size of each war (15v15, 30v30, ...). "Consistent composition" means at least 3 recorded encounters and the clan's most common war size covering 70%+ of them. Clans with no recorded size yet are treated as consistent so the Live list is not empty on day one; the check tightens automatically as new data arrives.
+
+## What you will see
+
+A new "Hunters" section on the War Tracker page with three tabs (Hunting / Live / Retired). Each row shows clan name and tag, total encounters, first and last seen, usual war size, the FWA clans it hits most, and any association/blacklist tag it already carries, plus the existing Associate button. Search and sort by encounter count; CSV export.
+
+## The API
+
+A public endpoint returning the same lists as JSON, protected by an API key you send in a header. Example shapes:
+
 ```text
-Total Clans            : all tracked FWA clans (417)
-Clans In War           : clans currently in a war with an opponent
-Total Successful Matches: opponent found in FWA list
-Total Miss Matches     : opponent NOT in FWA list
-Miss Match Percentage  : miss / (success + miss)
-Blacklisted Matches    : opponent has a "Blacklist" association
-Association Based Matches: opponent exists in clan_associations
+GET /hunters            -> all three lists
+GET /hunters?list=live  -> one list (hunting | live | retired)
 ```
-A table lists every **NON-match** (tracked clan → opponent tag/name, war state, blacklist/association flags).
 
-### 1. Database (migration)
-- Add `war_tracker` value to the `app_role` enum (new access role).
-- `war_match_scans` — one row per scan run: `total_clans`, `clans_in_war`, `successful_matches`, `mismatches`, `mismatch_percentage`, `blacklisted_matches`, `association_matches`, `status`, `run_by`.
-- `war_match_results` — per clan/opponent: `scan_id`, `clan_tag`, `clan_name`, `opponent_tag`, `opponent_name`, `war_state`, `is_match`, `is_blacklisted`, `is_association`.
-- GRANTs + RLS: authenticated with a staff/war_tracker role can read; service_role full access (edge function writes).
-- Seed a **"Blacklist"** association type into `association_types` (via insert tool).
+Each clan entry: tag, name, encounters, first_seen, last_seen, days_since_last, usual war size, size consistency, association type, blacklisted flag. Response is cached briefly so repeated calls are cheap.
 
-### 2. Edge function: `war-match-tracker`
-- Fetches `Clans.json`, builds a Set of tracked tags.
-- Loads `clan_associations` (tag → type) once; flags Blacklist vs any association.
-- Iterates tracked clans in small concurrent batches, calling CoC `clans/{tag}/currentwar` (reusing the existing dynamic-key/retry logic from `coc-api`).
-  - `notInWar` or private war log → skipped from match math (recorded as no-opponent).
-  - `preparation` / `inWar` / `warEnded` → extract opponent tag + name.
-- Computes stats, writes one `war_match_scans` row + `war_match_results` rows using the service-role client.
-- Returns the scan summary.
+## Technical details
 
-### 3. Scheduled + manual runs
-- Manual: "Run Scan" button on the page invokes the function.
-- Scheduled: enable `pg_cron` + `pg_net` and schedule an hourly call to the function (via insert tool, since it contains project-specific URL/key).
-
-### 4. Frontend: `src/pages/WarMatchTracker.tsx` (route `/war-tracker`)
-- Access: `war_tracker`, `mod`, `admin`, `primary_admin` (others redirected to `/staff`).
-- Summary stat cards (the metrics above) + last-scan timestamp.
-- "Run Scan" button with progress/loading state; realtime refresh when a scan completes.
-- Mismatch table with clan badge, opponent tag/name, war state, and Blacklist/Association badges. Filter/search by clan name.
-
-### 5. Wiring
-- `src/App.tsx` — add `/war-tracker` route.
-- `src/components/Navbar.tsx` — add "War Tracker" link (role-gated).
-- `src/pages/StaffDashboard.tsx` — include `war_tracker` in the role assignment options so admins can grant it.
-
-### Files
-- **Create**: `supabase/functions/war-match-tracker/index.ts`, `src/pages/WarMatchTracker.tsx`
-- **Modify**: `src/App.tsx`, `src/components/Navbar.tsx`, `src/pages/StaffDashboard.tsx`
-- **Migration**: enum value + 2 tables (GRANTs/RLS)
-- **Data**: seed "Blacklist" association type; schedule cron job
-
-### Notes / trade-offs
-- 417 live war lookups are rate-limited; batching keeps it within limits but a full scan takes time and some clans with private war logs can't be read (reported as skipped).
-- New role name proposed as `war_tracker` — tell me if you'd prefer a different name.
+- Migration: add `team_size int` to `war_match_results`; create view/function `hunter_stats` computing per-opponent encounter counts (distinct clan_tag + day), first/last seen, modal team size and its share, plus a `get_hunter_lists()` security-definer function returning classified rows. Thresholds stored in a small `hunter_settings` table so they can be tuned without a code change.
+- Edge function `war-match-tracker`: record `war.teamSize` on each result row.
+- New edge function `hunters-api`: `verify_jwt = false`, validates `x-api-key` against a generated `HUNTERS_API_KEY` secret, calls `get_hunter_lists()` with the service role, returns JSON with CORS headers; validates the `list` query param.
+- Frontend: new `src/components/war-tracker/HunterLists.tsx` rendered on `WarMatchTracker.tsx`, reading via the existing authenticated client and reusing the current association dialog.
+- Access for logged-in users stays gated by `can_view_war_tracker`.
